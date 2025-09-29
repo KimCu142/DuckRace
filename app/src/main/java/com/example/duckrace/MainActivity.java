@@ -51,7 +51,6 @@ public class MainActivity extends AppCompatActivity {
     private View trackFrame, finishLine;
     private TextView tvCountdown, tvCoins;
 
-
     private final List<DuckRunner> runners = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
     private boolean raceRunning = false;
@@ -62,6 +61,7 @@ public class MainActivity extends AppCompatActivity {
     private float MAX_SPEED = 260f; // tốc độ tối đa
     private float BOOST_ACCEL = 220f; // gia tốc khi được "boost"
     private float FRICTION = 140f; // ma sát để vịt ko tăng vô hạn
+    private float RANDOM_JITTER_ACCEL = 180f; // gia tốc ngẫu nhiên mỗi tick để tạo kịch tính
 
     private float finishX = 0f; // vị trí đích (theo translationX trong vùng chạy)
 
@@ -89,7 +89,6 @@ public class MainActivity extends AppCompatActivity {
         int amount;
     }
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -106,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         tvCoins = findViewById(R.id.tvCoins);
         btnAddCoins = findViewById(R.id.btnAddCoin);
         auth = FirebaseAuth.getInstance();
-        db   = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
         btnBet = findViewById(R.id.btnBet);
         btnBet.setOnClickListener(v -> showBetDialog());
 
@@ -316,6 +315,10 @@ public class MainActivity extends AppCompatActivity {
         // Reset vị trí/tốc độ và thiết lập nhịp "boost" ngẫu nhiên
         for (DuckRunner r : runners) {
             r.reset();
+            // Thiết lập biến thiên cá nhân cho từng vịt để tạo độ giãn cách
+            r.minSpeed = Math.max(60f, MIN_SPEED + (random.nextFloat() * 40f - 20f));
+            r.maxSpeed = MAX_SPEED + (random.nextFloat() * 60f - 10f);
+            r.targetOffset = (random.nextFloat() * 30f - 15f); // bắt đầu với lệch mục tiêu nhỏ
             scheduleBoost(r);
         }
 
@@ -373,18 +376,29 @@ public class MainActivity extends AppCompatActivity {
             DuckRunner winner = null;
 
             for (DuckRunner r : runners) {
-                // Gia tốc ngắn hạn (boost) + ma sát kéo về tốc độ cơ bản
-                float target = r.baseSpeed;
-                float dv = target - r.speed;
-                float accel = r.boosting ? BOOST_ACCEL : 0f;
-                // Ma sát "dịu": đẩy dần về target
-                r.speed += (dv * 2.0f) * dt + accel * dt;
+                // Tiến hóa offset mục tiêu chậm theo random-walk để tạo khác biệt dài hạn
+                r.targetOffset += (random.nextFloat() * 2f - 1f) * 6f; // thay đổi nhẹ mỗi tick
+                if (r.targetOffset < -60f)
+                    r.targetOffset = -60f;
+                if (r.targetOffset > 60f)
+                    r.targetOffset = 60f;
 
-                // Clamp tốc độ
-                if (r.speed < MIN_SPEED)
-                    r.speed = MIN_SPEED;
-                if (r.speed > MAX_SPEED)
-                    r.speed = MAX_SPEED;
+                // Mục tiêu tốc độ tức thời = base + offset dài hạn + jitter ngắn hạn
+                float jitterSpeed = (random.nextFloat() * 50f - 25f);
+                float target = r.baseSpeed + r.targetOffset + jitterSpeed;
+                // Gia tốc ngắn hạn khi boost và thêm nhiễu gia tốc để tạo vượt mặt
+                float accel = (r.boosting ? BOOST_ACCEL : 0f);
+                float noiseAccel = (random.nextFloat() * 2f - 1f) * RANDOM_JITTER_ACCEL;
+                float dv = target - r.speed;
+                r.speed += (dv * 2.0f) * dt + (accel + noiseAccel) * dt;
+
+                // Clamp tốc độ sau khi áp dụng nhiễu
+                float clampMin = (r.minSpeed > 0f) ? r.minSpeed : MIN_SPEED;
+                float clampMax = (r.maxSpeed > 0f) ? r.maxSpeed : MAX_SPEED;
+                if (r.speed < clampMin)
+                    r.speed = clampMin;
+                if (r.speed > clampMax)
+                    r.speed = clampMax;
 
                 // Cập nhật vị trí
                 r.x += r.speed * dt;
@@ -439,7 +453,8 @@ public class MainActivity extends AppCompatActivity {
                 db.collection("users").document(user.getUid())
                         .update("coins", FieldValue.increment(finalTotalReward))
                         .addOnSuccessListener(aVoid -> {
-                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được " + finalTotalReward + " xu!";
+                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được " + finalTotalReward
+                                    + " xu!";
                             new AlertDialog.Builder(this)
                                     .setTitle("Kết quả")
                                     .setMessage(msg)
@@ -633,6 +648,10 @@ public class MainActivity extends AppCompatActivity {
         float baseSpeed = 0f; // mỗi vịt khác nhau nhẹ
         boolean boosting = false;
         Runnable boostRunnable;
+        // Biến cá nhân hóa để tạo giãn cách
+        float minSpeed = 0f;
+        float maxSpeed = 0f;
+        float targetOffset = 0f; // offset chậm biến thiên cộng vào baseSpeed
 
         DuckRunner(String name, ImageView duck, View area) {
             this.name = name;
@@ -691,22 +710,24 @@ public class MainActivity extends AppCompatActivity {
         public void onNothingSelected(android.widget.AdapterView<?> parent) {
         }
     }
+
     private void setupUserRealtime(String uid) {
-        DocumentReference
-                ref = db.collection("users").document(uid);
+        DocumentReference ref = db.collection("users").document(uid);
         // bỏ listener cũ nếu có
-        if (userReg != null) userReg.remove();
+        if (userReg != null)
+            userReg.remove();
 
         userReg = ref.addSnapshotListener((snap, e) -> {
-            if (e != null || snap == null || !snap.exists()) return;
+            if (e != null || snap == null || !snap.exists())
+                return;
             String name = snap.getString("displayName");
-            Long coins  = snap.getLong("coins");
+            Long coins = snap.getLong("coins");
             btnPlayerName.setText(name == null ? "Player" : name);
-            
+
             // Animate coin update
             String oldCoinText = tvCoins.getText().toString();
             String newCoinText = String.valueOf(coins == null ? 0 : coins);
-            
+
             if (!oldCoinText.equals(newCoinText)) {
                 animateCoinUpdate(newCoinText);
             } else {
@@ -747,7 +768,10 @@ public class MainActivity extends AppCompatActivity {
 
                 if (chk.isChecked()) {
                     int amount = 0;
-                    try { amount = Integer.parseInt(edt.getText().toString()); } catch (Exception ignored) {}
+                    try {
+                        amount = Integer.parseInt(edt.getText().toString());
+                    } catch (Exception ignored) {
+                    }
                     if (amount > 0) {
                         Bet bet = new Bet();
                         bet.duckName = chk.getText().toString();
@@ -776,14 +800,17 @@ public class MainActivity extends AppCompatActivity {
                                     Toast.makeText(this, "Bạn không còn xu để đặt cược!", Toast.LENGTH_SHORT).show();
                                     currentBets.clear();
                                 } else if (finalTotalBet > currentCoins) {
-                                    Toast.makeText(this, "Bạn chỉ có " + currentCoins + " xu, không thể đặt " + finalTotalBet, Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(this,
+                                            "Bạn chỉ có " + currentCoins + " xu, không thể đặt " + finalTotalBet,
+                                            Toast.LENGTH_SHORT).show();
                                     currentBets.clear();
                                 } else {
                                     // Đủ tiền → trừ xu
                                     db.collection("users").document(user.getUid())
                                             .update("coins", FieldValue.increment(-finalTotalBet))
                                             .addOnSuccessListener(aVoid -> {
-                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!", Toast.LENGTH_SHORT).show();
+                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
+                                                        Toast.LENGTH_SHORT).show();
                                             });
 
                                     btnBet.setEnabled(false);
