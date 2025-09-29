@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <animation-list xmlns:android="http://schemas.android.com/apk/res/android"
     android:oneshot="false">
-    
+
     <!-- Frame 1 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_1" 
+    <item android:drawable="@drawable/cute_duck_animated_set_1"
           android:duration="150"/>
-    
+
     <!-- Frame 2 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_2" 
+    <item android:drawable="@drawable/cute_duck_animated_set_2"
           android:duration="150"/>
-    
+
     <!-- Frame 3 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_3" 
+    <item android:drawable="@drawable/cute_duck_animated_set_3"
           android:duration="150"/>
-    
+
     <!-- Frame 4 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_4" 
+    <item android:drawable="@drawable/cute_duck_animated_set_4"
           android:duration="150"/>
-    
+
     <!-- Frame 5 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_5" 
+    <item android:drawable="@drawable/cute_duck_animated_set_5"
           android:duration="150"/>
-    
+
     <!-- Frame 6 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_6" 
+    <item android:drawable="@drawable/cute_duck_animated_set_6"
           android:duration="150"/>
-    
+
     <!-- Frame 7 -->
-    <item android:drawable="@drawable/cute_duck_animated_set_7" 
+    <item android:drawable="@drawable/cute_duck_animated_set_7"
           android:duration="150"/>
-          
+
 </animation-list>
