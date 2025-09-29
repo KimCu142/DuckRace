@@ -1,6 +1,10 @@
 package com.example.duckrace;
 
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.AnimatedImageDrawable;
+import android.graphics.drawable.AnimationDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -10,7 +14,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -19,7 +22,6 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,10 +33,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
@@ -57,21 +56,23 @@ public class MainActivity extends AppCompatActivity {
     private boolean raceFinished = false;
 
     // Tham số "vật lý" (đơn vị: px/s và px/s^2)
-    private float MIN_SPEED = 120f; // tốc độ cơ bản
-    private float MAX_SPEED = 260f; // tốc độ tối đa
-    private float BOOST_ACCEL = 220f; // gia tốc khi được "boost"
-    private float FRICTION = 140f; // ma sát để vịt ko tăng vô hạn
+
+    private float MIN_SPEED = 120f;
+    private float MAX_SPEED = 260f;
+    private float BOOST_ACCEL = 220f;
+    private float FRICTION = 140f;
     private float RANDOM_JITTER_ACCEL = 180f; // gia tốc ngẫu nhiên mỗi tick để tạo kịch tính
 
-    private float finishX = 0f; // vị trí đích (theo translationX trong vùng chạy)
+
+    private float finishX = 0f;
 
     private final Random random = new Random();
 
     // MediaPlayer cho âm thanh
     private MediaPlayer backgroundMusic;
     private MediaPlayer raceStartSound;
-    private MediaPlayer goSound; // Âm thanh "GO!"
-    private MediaPlayer[] duckQuackSounds; // Mảng 3 loại âm thanh vịt kêu
+    private MediaPlayer goSound;
+    private MediaPlayer[] duckQuackSounds;
     private MediaPlayer raceFinishSound;
 
     // Timer cho tiếng vịt kêu liên tục
@@ -113,7 +114,6 @@ public class MainActivity extends AppCompatActivity {
         if (current != null) {
             setupUserRealtime(current.getUid());
         } else {
-
             btnPlayerName.setText("Player");
             tvCoins.setText("0");
         }
@@ -123,7 +123,6 @@ public class MainActivity extends AppCompatActivity {
                     .setMessage("Bạn có chắc muốn đăng xuất không?")
                     .setPositiveButton("đăng xuất", (d, w) -> {
                         FirebaseAuth.getInstance().signOut();
-                        // Quay về màn hình Login
                         startActivity(new Intent(MainActivity.this, LoginActivity.class));
                         finish();
                     })
@@ -166,18 +165,16 @@ public class MainActivity extends AppCompatActivity {
 
     private void initializeSounds() {
         try {
-            // Nhạc nền (loop) - chỉ tạo nếu file tồn tại
             int backgroundMusicId = getResources().getIdentifier("background_music", "raw", getPackageName());
             if (backgroundMusicId != 0) {
                 backgroundMusic = MediaPlayer.create(this, backgroundMusicId);
                 if (backgroundMusic != null) {
                     backgroundMusic.setLooping(true);
-                    backgroundMusic.setVolume(0.6f, 0.6f); // Tăng âm lượng x2 (0.3 -> 0.6)
+                    backgroundMusic.setVolume(0.6f, 0.6f);
                 }
             }
 
-            // Âm thanh bắt đầu cuộc đua
-            int raceStartId = getResources().getIdentifier("race_start", "raw", getPackageName());
+            int raceStartId = getResources().getIdentifier("countdown", "raw", getPackageName());
             if (raceStartId != 0) {
                 raceStartSound = MediaPlayer.create(this, raceStartId);
                 if (raceStartSound != null) {
@@ -185,7 +182,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // Âm thanh "GO!"
             int goId = getResources().getIdentifier("go", "raw", getPackageName());
             if (goId != 0) {
                 goSound = MediaPlayer.create(this, goId);
@@ -194,7 +190,6 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            // Khởi tạo mảng âm thanh vịt kêu (3 loại)
             duckQuackSounds = new MediaPlayer[3];
             String[] quackFiles = { "duck_quack_1", "duck_quack_2", "duck_quack_3" };
 
@@ -203,12 +198,11 @@ public class MainActivity extends AppCompatActivity {
                 if (quackId != 0) {
                     duckQuackSounds[i] = MediaPlayer.create(this, quackId);
                     if (duckQuackSounds[i] != null) {
-                        duckQuackSounds[i].setVolume(0.75f, 0.75f); // Tăng âm lượng x1.5 (0.5 -> 0.75)
+                        duckQuackSounds[i].setVolume(0.75f, 0.75f);
                     }
                 }
             }
 
-            // Âm thanh kết thúc
             int raceFinishId = getResources().getIdentifier("race_finish", "raw", getPackageName());
             if (raceFinishId != 0) {
                 raceFinishSound = MediaPlayer.create(this, raceFinishId);
@@ -217,10 +211,39 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         } catch (Exception e) {
-            // Nếu không có file âm thanh, tiếp tục mà không báo lỗi
             e.printStackTrace();
         }
     }
+
+    // Helper: set drawable và chạy/dừng animation (GIF/AnimationDrawable)
+    private void setDrawablePlay(ImageView iv, int resId, boolean play) {
+        iv.setImageResource(resId);
+        Drawable d = iv.getDrawable();
+        if (d instanceof AnimationDrawable) {
+            AnimationDrawable a = (AnimationDrawable) d;
+            if (play) a.start(); else a.stop();
+        } else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable) {
+            AnimatedImageDrawable a = (AnimatedImageDrawable) d;
+            if (play) a.start(); else a.stop();
+        }
+    }
+
+    // Helper: start/stop cho drawable HIỆN CÓ của ImageView (không đổi resource)
+    private void startDrawableIfAnim(ImageView iv) {
+        if (iv == null) return;
+        Drawable d = iv.getDrawable();
+        if (d instanceof AnimationDrawable) ((AnimationDrawable) d).start();
+        else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable)
+            ((AnimatedImageDrawable) d).start();
+    }
+    private void stopDrawableIfAnim(ImageView iv) {
+        if (iv == null) return;
+        Drawable d = iv.getDrawable();
+        if (d instanceof AnimationDrawable) ((AnimationDrawable) d).stop();
+        else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable)
+            ((AnimatedImageDrawable) d).stop();
+    }
+
 
     private void buildLanes(int count) {
         // Nếu đang chạy thì dừng
@@ -234,24 +257,32 @@ public class MainActivity extends AppCompatActivity {
 
             TextView tvName = lane.findViewById(R.id.tvName);
             ImageView imgDuck = lane.findViewById(R.id.imgDuck);
+            ImageView imgWave = lane.findViewById(R.id.imgWave);
             View area = lane.findViewById(R.id.area);
 
             String name = String.format(Locale.getDefault(), "Vịt %d", i + 1);
             tvName.setText(name);
 
-            // Thiết lập animation cho vịt
-            imgDuck.setImageResource(R.drawable.duck_animation);
-            AnimationDrawable duckAnimation = (AnimationDrawable) imgDuck.getDrawable();
-            duckAnimation.start();
+            imgDuck.setImageResource(R.drawable.duck_run);
+            startDrawableIfAnim(imgDuck);
+
+            // ẨN SÓNG BAN ĐẦU (chưa bấm Start)
+            if (imgWave != null) {
+                Drawable wd = imgWave.getDrawable();
+                if (wd instanceof AnimationDrawable) ((AnimationDrawable) wd).stop();
+                else if (Build.VERSION.SDK_INT >= 28 && wd instanceof AnimatedImageDrawable)
+                    ((AnimatedImageDrawable) wd).stop();
+                imgWave.setVisibility(View.GONE);
+            }
 
             DuckRunner runner = new DuckRunner(name, imgDuck, area);
+            runner.wave = imgWave;
             runners.add(runner);
 
             lanesContainer.addView(lane);
         }
 
         // Sau khi layout xong, tính toạ độ vạch đích theo vùng chạy
-        // (đưa về translationX của con vịt trong "area")
         trackFrame.post(this::computeFinishX);
         raceFinished = false;
         tvCountdown.setText("");
@@ -267,41 +298,38 @@ public class MainActivity extends AppCompatActivity {
         int duckWidth = ref.duck.getWidth();
         int rightPadding = dp(8);
 
-        // Mốc đích: mép phải vùng chạy trừ bề rộng vịt
         finishX = Math.max(0, areaWidth - duckWidth - rightPadding);
-
-        // đặt vạch đích sát mép phải trackFrame (để nhìn "chuẩn")
-        // (finishLine đã width 4dp & layout_gravity="end" nên OK)
     }
 
-    private void startCountdownThenRace() {
-        enableControls(false);
-        tvCountdown.setText("3");
+     private void startCountdownThenRace() {
+    enableControls(false);
 
-        // Tiếng vịt kêu vẫn tiếp tục phát trong countdown
+    // Hiện "3" ngay lập tức cho chắc
+    tvCountdown.setText("3");
 
-        // Phát âm thanh bắt đầu
-        playSound(raceStartSound);
+    playSound(raceStartSound);
 
-        new CountDownTimer(3000, 1000) {
-            int n = 3;
+    // 3 giây, tick mỗi 1 giây -> lần lượt 3, 2, 1
+    new CountDownTimer(3000, 1000) {
+        int n = 3;
 
-            @Override
-            public void onTick(long millisUntilFinished) {
-                tvCountdown.setText(String.valueOf(n));
-                n--;
-            }
+        @Override
+        public void onTick(long millisUntilFinished) {
+            tvCountdown.setText(String.valueOf(n));
+            n--;
+        }
 
-            @Override
-            public void onFinish() {
-                tvCountdown.setText("GO!");
-                // Phát âm thanh "GO!" (cắt bớt 2 giây đầu)
-                playGoSound();
-                tvCountdown.postDelayed(() -> tvCountdown.setText(""), 500);
-                startRace();
-            }
-        }.start();
-    }
+        @Override
+        public void onFinish() {
+            tvCountdown.setText("FIGHT");
+            playGoSound();
+            // Xoá chữ sau 0.5s, race bắt đầu ngay
+            tvCountdown.postDelayed(() -> tvCountdown.setText(""), 500);
+            startRace();
+        }
+    }.start();
+}
+
 
     private void startRace() {
         // Đảm bảo tính được finishX
@@ -310,16 +338,20 @@ public class MainActivity extends AppCompatActivity {
         // Bắt đầu nhạc nền
         playBackgroundMusic();
 
-        // Tiếng vịt kêu đã phát liên tục từ khi mở app
-
         // Reset vị trí/tốc độ và thiết lập nhịp "boost" ngẫu nhiên
         for (DuckRunner r : runners) {
             r.reset();
-            // Thiết lập biến thiên cá nhân cho từng vịt để tạo độ giãn cách
-            r.minSpeed = Math.max(60f, MIN_SPEED + (random.nextFloat() * 40f - 20f));
-            r.maxSpeed = MAX_SPEED + (random.nextFloat() * 60f - 10f);
-            r.targetOffset = (random.nextFloat() * 30f - 15f); // bắt đầu với lệch mục tiêu nhỏ
+            startDrawableIfAnim(r.duck);
             scheduleBoost(r);
+
+            // HIỆN SÓNG & CHẠY ANIMATION SÓNG KHI BẮT ĐẦU
+            if (r.wave != null) {
+                r.wave.setVisibility(View.VISIBLE);
+                Drawable wd = r.wave.getDrawable();
+                if (wd instanceof AnimationDrawable) ((AnimationDrawable) wd).start();
+                else if (Build.VERSION.SDK_INT >= 28 && wd instanceof AnimatedImageDrawable)
+                    ((AnimatedImageDrawable) wd).start();
+            }
         }
 
         raceRunning = true;
@@ -331,12 +363,24 @@ public class MainActivity extends AppCompatActivity {
     private void resetRace() {
         stopRaceLoop();
         stopBackgroundMusic();
-        stopGoSound(); // Dừng âm thanh GO nếu đang phát
-        stopContinuousQuacking(); // Dừng tiếng vịt kêu liên tục
+        stopGoSound();
+         stopRaceStartSound();
+        stopContinuousQuacking();
 
         for (DuckRunner r : runners) {
             r.resetToStart();
+            stopDrawableIfAnim(r.duck);
             r.stopAnimation();
+
+            // TẮT SÓNG LẠI KHI RESET
+            if (r.wave != null) {
+                Drawable wd = r.wave.getDrawable();
+                if (wd instanceof AnimationDrawable) ((AnimationDrawable) wd).stop();
+                else if (Build.VERSION.SDK_INT >= 28 && wd instanceof AnimatedImageDrawable)
+                    ((AnimatedImageDrawable) wd).stop();
+                r.wave.setVisibility(View.GONE);
+                r.wave.setTranslationX(0f); // trả về đầu lane
+            }
         }
 
         // Khởi động lại tiếng vịt kêu liên tục sau khi reset
@@ -357,8 +401,11 @@ public class MainActivity extends AppCompatActivity {
     private void stopRaceLoop() {
         raceRunning = false;
         handler.removeCallbacks(gameLoop);
-        for (DuckRunner r : runners) {
-            handler.removeCallbacks(r.boostRunnable);
+       for (DuckRunner r : runners) {
+            if (r.boostRunnable != null) {         
+                handler.removeCallbacks(r.boostRunnable);
+                r.boostRunnable = null;
+            }
         }
     }
 
@@ -390,7 +437,8 @@ public class MainActivity extends AppCompatActivity {
                 float accel = (r.boosting ? BOOST_ACCEL : 0f);
                 float noiseAccel = (random.nextFloat() * 2f - 1f) * RANDOM_JITTER_ACCEL;
                 float dv = target - r.speed;
-                r.speed += (dv * 2.0f) * dt + (accel + noiseAccel) * dt;
+                float accel = r.boosting ? BOOST_ACCEL : 0f;
+                r.speed += (dv * 2.0f) * dt + accel * dt;
 
                 // Clamp tốc độ sau khi áp dụng nhiễu
                 float clampMin = (r.minSpeed > 0f) ? r.minSpeed : MIN_SPEED;
@@ -409,6 +457,13 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 r.duck.setTranslationX(r.x);
+
+                // CHO SÓNG ĐI THEO NGANG VỚI VỊT
+                if (r.wave != null) {
+                    // nếu wave rộng ~ bằng con vịt, để offset = 0; cần chỉnh nhẹ thì đổi thành -dp(2) hoặc +dp(2)
+                    float waveOffsetX = 0f;
+                    r.wave.setTranslationX(r.x + waveOffsetX);
+                }
             }
 
             if (winner != null && !raceFinished) {
@@ -421,8 +476,6 @@ public class MainActivity extends AppCompatActivity {
                 // Dừng nhạc nền và âm thanh GO nhưng giữ tiếng vịt kêu liên tục
                 stopBackgroundMusic();
                 stopGoSound();
-                // Không dừng tiếng vịt kêu - để nó tiếp tục phát
-
                 // Phát âm thanh kết thúc
                 playSound(raceFinishSound);
 
@@ -538,7 +591,6 @@ public class MainActivity extends AppCompatActivity {
         int delay = randomRange(250, 700);
         handler.postDelayed(r.boostRunnable = () -> {
             r.boosting = true;
-            // Không phát tiếng vịt kêu ở đây nữa vì đã có tiếng kêu liên tục
             int boostTime = randomRange(120, 320);
             handler.postDelayed(() -> {
                 r.boosting = false;
@@ -561,6 +613,7 @@ public class MainActivity extends AppCompatActivity {
     private void playSound(MediaPlayer mediaPlayer) {
         if (mediaPlayer != null) {
             try {
+                if (mediaPlayer.isPlaying()) return;
                 mediaPlayer.seekTo(0);
                 mediaPlayer.start();
             } catch (Exception e) {
@@ -589,22 +642,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void playDuckQuack() {
-        // Chọn ngẫu nhiên 1 trong 3 loại âm thanh vịt kêu
-        if (duckQuackSounds != null) {
-            int randomIndex = random.nextInt(duckQuackSounds.length);
-            MediaPlayer selectedQuack = duckQuackSounds[randomIndex];
-            if (selectedQuack != null) {
-                playSound(selectedQuack);
+     private void playDuckQuack() {
+        if (duckQuackSounds == null) return;
+        // Chỉ phát khi có player rảnh, tránh chồng âm
+        for (int i = 0; i < duckQuackSounds.length; i++) {
+            int idx = random.nextInt(duckQuackSounds.length);
+            MediaPlayer mp = duckQuackSounds[idx];
+            if (mp != null && !mp.isPlaying()) {
+                playSound(mp);
+                return;
+            }
+        }
+    }
+
+    private void stopRaceStartSound() {
+        if (raceStartSound != null && raceStartSound.isPlaying()) {
+            try {
+                raceStartSound.pause();
+                raceStartSound.seekTo(0);
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
 
     private void playGoSound() {
-        // Phát âm thanh "GO!" với cắt bớt 2 giây đầu
         if (goSound != null) {
             try {
-                goSound.seekTo(2000); // Bỏ qua 2 giây đầu (2000ms)
+                goSound.seekTo(0);
                 goSound.start();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -613,10 +678,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void stopGoSound() {
-        // Dừng âm thanh "GO!" nếu đang phát
         if (goSound != null && goSound.isPlaying()) {
             try {
                 goSound.pause();
+                 goSound.seekTo(2000);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -624,22 +689,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startContinuousQuacking() {
-        // Dừng timer cũ nếu có
         stopContinuousQuacking();
 
-        // Tạo timer mới cho tiếng vịt kêu liên tục (không phụ thuộc vào trạng thái
-        // race)
         quackRunnable = new Runnable() {
             @Override
             public void run() {
                 playDuckQuack();
-                // Lên lịch lần tiếp theo (1-3 giây ngẫu nhiên)
                 int delay = randomRange(1000, 3000);
                 quackHandler.postDelayed(this, delay);
             }
         };
 
-        // Bắt đầu timer
         quackHandler.postDelayed(quackRunnable, randomRange(500, 1500));
     }
 
@@ -653,7 +713,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // Giải phóng MediaPlayer khi Activity bị hủy
         releaseMediaPlayers();
     }
 
@@ -688,7 +747,10 @@ public class MainActivity extends AppCompatActivity {
     private static class DuckRunner {
         final String name;
         final ImageView duck;
+
         final View area;
+
+        ImageView wave;
 
         float x = 0f; // translationX
         float speed = 0f; // px/s
@@ -721,21 +783,25 @@ public class MainActivity extends AppCompatActivity {
             boosting = false;
             duck.setTranslationX(0f);
 
-            // Khởi động lại animation vịt
+            // Khởi động lại animation vịt (giữ logic cũ)
             startAnimation();
         }
 
         void startAnimation() {
-            AnimationDrawable animation = (AnimationDrawable) duck.getDrawable();
-            if (animation != null) {
-                animation.start();
+            Drawable d = duck.getDrawable();     
+            if (d instanceof AnimationDrawable) {
+                ((AnimationDrawable) d).start();
+            } else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable) {
+                ((AnimatedImageDrawable) d).start();
             }
         }
 
-        void stopAnimation() {
-            AnimationDrawable animation = (AnimationDrawable) duck.getDrawable();
-            if (animation != null) {
-                animation.stop();
+         void stopAnimation() {
+            Drawable d = duck.getDrawable();
+            if (d instanceof AnimationDrawable) {
+                ((AnimationDrawable) d).stop();
+            } else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable) {
+                ((AnimatedImageDrawable) d).stop();
             }
         }
     }
@@ -893,3 +959,4 @@ public class MainActivity extends AppCompatActivity {
     }
 
 }
+
