@@ -12,12 +12,15 @@ import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -40,7 +43,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private Spinner spDuckCount;
-    private Button btnStart, btnReset, btnPlayerName;
+    private Button btnStart, btnReset, btnPlayerName, btnBet;
     private ImageButton btnAddCoins;
     private LinearLayout lanesContainer;
     private View trackFrame, finishLine;
@@ -76,6 +79,15 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private ListenerRegistration userReg;
 
+    // Tien cuoc
+    private final List<Bet> currentBets = new ArrayList<>();
+
+    private static class Bet {
+        String duckName;
+        int amount;
+    }
+
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,6 +105,8 @@ public class MainActivity extends AppCompatActivity {
         btnAddCoins = findViewById(R.id.btnAddCoin);
         auth = FirebaseAuth.getInstance();
         db   = FirebaseFirestore.getInstance();
+        btnBet = findViewById(R.id.btnBet);
+        btnBet.setOnClickListener(v -> showBetDialog());
 
         FirebaseUser current = auth.getCurrentUser();
         if (current != null) {
@@ -325,6 +339,7 @@ public class MainActivity extends AppCompatActivity {
     private void enableControls(boolean enable) {
         spDuckCount.setEnabled(enable);
         btnStart.setEnabled(enable);
+        btnBet.setEnabled(enable);
         btnReset.setEnabled(true);
     }
 
@@ -398,11 +413,54 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void showWinner(DuckRunner winner) {
-        new AlertDialog.Builder(this)
-                .setTitle("Kết quả")
-                .setMessage("🏆 " + winner.name + " thắng cuộc!")
-                .setPositiveButton("OK", null)
-                .show();
+        FirebaseUser user = auth.getCurrentUser();
+        if (user != null && !currentBets.isEmpty()) {
+            int totalReward = 0;
+
+            // Tính tiền thưởng
+            for (Bet bet : currentBets) {
+                if (bet.duckName.equals(winner.name)) {
+                    totalReward += bet.amount * 2; // trả lại gấp đôi số tiền cược
+                }
+            }
+
+            int finalTotalReward = totalReward; // biến final để dùng trong lambda
+            String finalWinnerName = winner.name; // copy tên vịt sang biến final
+
+            if (finalTotalReward > 0) {
+                db.collection("users").document(user.getUid())
+                        .update("coins", FieldValue.increment(finalTotalReward))
+                        .addOnSuccessListener(aVoid -> {
+                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được " + finalTotalReward + " xu!";
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Kết quả")
+                                    .setMessage(msg)
+                                    .setPositiveButton("OK", null)
+                                    .show();
+
+                            btnBet.setVisibility(View.VISIBLE); // hiện lại nút sau khi đua xong
+                        });
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Kết quả")
+                        .setMessage("🏆 " + finalWinnerName + " thắng!\nTiếc quá, bạn không thắng xu nào.")
+                        .setPositiveButton("OK", null)
+                        .show();
+
+                btnBet.setVisibility(View.VISIBLE);
+            }
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle("Kết quả")
+                    .setMessage("🏆 " + winner.name + " thắng cuộc!")
+                    .setPositiveButton("OK", null)
+                    .show();
+
+            btnBet.setVisibility(View.VISIBLE);
+        }
+
+        btnBet.setEnabled(true);
+        currentBets.clear(); // reset cược sau khi xử lý
     }
 
     // Lên lịch "boost" ngẫu nhiên theo nhịp
@@ -640,5 +698,86 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void showBetDialog() {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_bet, null);
+        LinearLayout betContainer = view.findViewById(R.id.betContainer);
+
+        // Sinh UI theo số vịt
+        for (DuckRunner r : runners) {
+            View item = LayoutInflater.from(this).inflate(R.layout.item_bet, betContainer, false);
+
+            CheckBox checkBox = item.findViewById(R.id.chkDuck);
+            EditText edtAmount = item.findViewById(R.id.edtAmount);
+
+            checkBox.setText(r.name);
+
+            betContainer.addView(item);
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        view.findViewById(R.id.btnConfirmBet).setOnClickListener(v -> {
+            currentBets.clear();
+            int totalBet = 0;
+
+            // Gom danh sách cược
+            for (int i = 0; i < betContainer.getChildCount(); i++) {
+                View item = betContainer.getChildAt(i);
+                CheckBox chk = item.findViewById(R.id.chkDuck);
+                EditText edt = item.findViewById(R.id.edtAmount);
+
+                if (chk.isChecked()) {
+                    int amount = 0;
+                    try { amount = Integer.parseInt(edt.getText().toString()); } catch (Exception ignored) {}
+                    if (amount > 0) {
+                        Bet bet = new Bet();
+                        bet.duckName = chk.getText().toString();
+                        bet.amount = amount;
+                        currentBets.add(bet);
+                        totalBet += amount;
+                    }
+                }
+            }
+
+            // Nếu không đặt cược thì vẫn đóng dialog, không báo lỗi
+            if (currentBets.isEmpty()) {
+                dialog.dismiss();
+                return;
+            }
+
+            FirebaseUser user = auth.getCurrentUser();
+            if (user != null) {
+                int finalTotalBet = totalBet;
+                db.collection("users").document(user.getUid()).get()
+                        .addOnSuccessListener(snapshot -> {
+                            if (snapshot.exists()) {
+                                long currentCoins = snapshot.getLong("coins") != null ? snapshot.getLong("coins") : 0;
+
+                                if (currentCoins <= 0) {
+                                    Toast.makeText(this, "Bạn không còn xu để đặt cược!", Toast.LENGTH_SHORT).show();
+                                    currentBets.clear();
+                                } else if (finalTotalBet > currentCoins) {
+                                    Toast.makeText(this, "Bạn chỉ có " + currentCoins + " xu, không thể đặt " + finalTotalBet, Toast.LENGTH_SHORT).show();
+                                    currentBets.clear();
+                                } else {
+                                    // Đủ tiền → trừ xu
+                                    db.collection("users").document(user.getUid())
+                                            .update("coins", FieldValue.increment(-finalTotalBet))
+                                            .addOnSuccessListener(aVoid -> {
+                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!", Toast.LENGTH_SHORT).show();
+                                            });
+
+                                    btnBet.setEnabled(false);
+                                    dialog.dismiss();
+                                }
+                            }
+                        });
+            }
+        });
+
+        dialog.show();
+    }
 
 }

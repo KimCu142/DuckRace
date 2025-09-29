@@ -134,4 +134,14 @@
         app:layout_constraintBottom_toBottomOf="@id/trackFrame"
         app:layout_constraintStart_toStartOf="@id/trackFrame"
         app:layout_constraintEnd_toEndOf="@id/trackFrame"/>
+
+    <Button
+        android:id="@+id/btnBet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đặt cược"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
