@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="128dp"
+    android:height="128dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <!-- simple pixel-art style trophy using rectangles -->
+    <path android:fillColor="#FFCA28" android:pathData="M14,8h36v10h-6v6h-24v-6h-6z"/>
+    <path android:fillColor="#FFC107" android:pathData="M20,24h24v8h-24z"/>
+    <path android:fillColor="#F9A825" android:pathData="M26,32h12v8h-12z"/>
+    <path android:fillColor="#8D6E63" android:pathData="M16,48h32v6h-32z"/>
+    <path android:fillColor="#6D4C41" android:pathData="M12,54h40v4h-40z"/>
+</vector>
+

@@ -426,7 +426,7 @@ public class MainActivity extends AppCompatActivity {
                 // Phát âm thanh kết thúc
                 playSound(raceFinishSound);
 
-                showWinner(winner);
+                navigateToBetResult(winner);
                 enableControls(true);
             } else {
                 handler.postDelayed(this, 16);
@@ -435,6 +435,8 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void showWinner(DuckRunner winner) {
+        // legacy popup kept for potential reuse but not called anymore
+        // now navigates to dedicated result screens
         FirebaseUser user = auth.getCurrentUser();
         if (user != null && !currentBets.isEmpty()) {
             int totalReward = 0;
@@ -484,6 +486,51 @@ public class MainActivity extends AppCompatActivity {
 
         btnBet.setEnabled(true);
         currentBets.clear(); // reset cược sau khi xử lý
+    }
+
+    private void navigateToBetResult(DuckRunner winner) {
+        FirebaseUser user = auth.getCurrentUser();
+        int totalBet = 0;
+        int totalWin = 0;
+        String winnerName = winner.name;
+
+        if (user != null && !currentBets.isEmpty()) {
+            for (Bet bet : currentBets) {
+                totalBet += bet.amount;
+                if (bet.duckName.equals(winnerName)) {
+                    totalWin += bet.amount * 2; // trả gấp đôi khi thắng
+                }
+            }
+
+            if (totalWin > 0) {
+                // Thắng: cộng xu và mở màn hình Win
+                final int finalTotalWin = totalWin;
+                db.collection("users").document(user.getUid())
+                        .update("coins", FieldValue.increment(totalWin))
+                        .addOnSuccessListener(aVoid -> {
+                            Intent intent = new Intent(MainActivity.this, BetResultWinActivity.class);
+                            intent.putExtra("amount", finalTotalWin);
+                            intent.putExtra("duck", winnerName);
+                            startActivity(intent);
+                        });
+            } else {
+                // Thua: đã trừ xu khi xác nhận cược, chỉ mở màn hình Lose với số đã đặt
+                Intent intent = new Intent(MainActivity.this, BetResultLoseActivity.class);
+                intent.putExtra("amount", totalBet);
+                intent.putExtra("duck", winnerName);
+                startActivity(intent);
+            }
+        } else {
+            // Không đặt cược: chỉ hiển thị win màn không thay đổi xu
+            Intent intent = new Intent(MainActivity.this, BetResultWinActivity.class);
+            intent.putExtra("amount", 0);
+            intent.putExtra("duck", winnerName);
+            startActivity(intent);
+        }
+
+        btnBet.setVisibility(View.VISIBLE);
+        btnBet.setEnabled(true);
+        currentBets.clear();
     }
 
     // Lên lịch "boost" ngẫu nhiên theo nhịp
@@ -805,13 +852,9 @@ public class MainActivity extends AppCompatActivity {
                                             Toast.LENGTH_SHORT).show();
                                     currentBets.clear();
                                 } else {
-                                    // Đủ tiền → trừ xu
-                                    db.collection("users").document(user.getUid())
-                                            .update("coins", FieldValue.increment(-finalTotalBet))
-                                            .addOnSuccessListener(aVoid -> {
-                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
-                                                        Toast.LENGTH_SHORT).show();
-                                            });
+                                    // Đủ tiền → KHÔNG trừ ngay. Trừ khi thua ở màn hình Lose.
+                                    Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
+                                            Toast.LENGTH_SHORT).show();
 
                                     btnBet.setEnabled(false);
                                     dialog.dismiss();
