@@ -32,6 +32,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
@@ -410,7 +411,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ======= Game loop (60fps) =======
-    private long lastTickMs = 0L;
+     private long lastTickMs = 0L;
     private final Runnable gameLoop = new Runnable() {
         @Override
         public void run() {
@@ -423,30 +424,17 @@ public class MainActivity extends AppCompatActivity {
             DuckRunner winner = null;
 
             for (DuckRunner r : runners) {
-                // Tiến hóa offset mục tiêu chậm theo random-walk để tạo khác biệt dài hạn
-                r.targetOffset += (random.nextFloat() * 2f - 1f) * 6f; // thay đổi nhẹ mỗi tick
-                if (r.targetOffset < -60f)
-                    r.targetOffset = -60f;
-                if (r.targetOffset > 60f)
-                    r.targetOffset = 60f;
-
-                // Mục tiêu tốc độ tức thời = base + offset dài hạn + jitter ngắn hạn
-                float jitterSpeed = (random.nextFloat() * 50f - 25f);
-                float target = r.baseSpeed + r.targetOffset + jitterSpeed;
-                // Gia tốc ngắn hạn khi boost và thêm nhiễu gia tốc để tạo vượt mặt
-                float accel = (r.boosting ? BOOST_ACCEL : 0f);
-                float noiseAccel = (random.nextFloat() * 2f - 1f) * RANDOM_JITTER_ACCEL;
+                // Gia tốc ngắn hạn (boost) + ma sát kéo về tốc độ cơ bản
+                float target = r.baseSpeed;
                 float dv = target - r.speed;
                 float accel = r.boosting ? BOOST_ACCEL : 0f;
                 r.speed += (dv * 2.0f) * dt + accel * dt;
 
-                // Clamp tốc độ sau khi áp dụng nhiễu
-                float clampMin = (r.minSpeed > 0f) ? r.minSpeed : MIN_SPEED;
-                float clampMax = (r.maxSpeed > 0f) ? r.maxSpeed : MAX_SPEED;
-                if (r.speed < clampMin)
-                    r.speed = clampMin;
-                if (r.speed > clampMax)
-                    r.speed = clampMax;
+                // Clamp tốc độ
+                if (r.speed < MIN_SPEED)
+                    r.speed = MIN_SPEED;
+                if (r.speed > MAX_SPEED)
+                    r.speed = MAX_SPEED;
 
                 // Cập nhật vị trí
                 r.x += r.speed * dt;
@@ -479,7 +467,7 @@ public class MainActivity extends AppCompatActivity {
                 // Phát âm thanh kết thúc
                 playSound(raceFinishSound);
 
-                navigateToBetResult(winner);
+                showWinner(winner);
                 enableControls(true);
             } else {
                 handler.postDelayed(this, 16);
