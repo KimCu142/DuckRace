@@ -1,40 +1,102 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/topup_panel_background"
+    android:padding="20dp">
 
-    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:ignore="MissingConstraints">
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_coin"
+            app:tint="@color/topup_primary_color"
+            android:contentDescription="Icon đặt cược" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="Đặt Cược Vịt Đua"
+            android:textColor="@color/topup_title_color"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Chọn vịt và số xu bạn tin là sẽ chiến thắng!"
+        android:textColor="@color/topup_text_color"
+        android:textSize="14sp" />
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="#1F000000" />
+
+    <!-- ScrollView for Bet Items -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
+            android:id="@+id/betContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Chọn vịt muốn đặt và số xu:"
-                android:textStyle="bold"/>
-
-            <LinearLayout
-                android:id="@+id/betContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_marginTop="12dp"/>
-
-            <Button
-                android:id="@+id/btnConfirmBet"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Xác nhận"/>
-        </LinearLayout>
+            android:divider="@drawable/abc_list_divider_mtrl_alpha"
+            android:showDividers="middle"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"/>
     </ScrollView>
 
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="16dp"
+        android:background="#1F000000" />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnCancelBet"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="Hủy"
+            android:textColor="@color/topup_hint_color" />
+
+        <Button
+            android:id="@+id/btnConfirmBet"
+            style="@style/Widget.MaterialComponents.Button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Xác Nhận Cược"
+            android:textStyle="bold"
+            app:icon="@drawable/ic_lightning"
+            app:iconTint="@color/white" />
+    </LinearLayout>
+
+</LinearLayout>
