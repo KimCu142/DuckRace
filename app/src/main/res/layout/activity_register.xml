@@ -1,0 +1,59 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:background="@drawable/background">
+
+    <TextView
+        android:text="Đăng ký"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingBottom="12dp"/>
+
+    <EditText
+        android:id="@+id/etEmail"
+        android:hint="Email"
+        android:inputType="textEmailAddress"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:textColorHint="#ffffff" />   <!-- màu hint -->
+
+    <EditText
+        android:id="@+id/etPassword"
+        android:hint="Mật khẩu (>=6 ký tự)"
+        android:inputType="textPassword"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColorHint="#ffffff" />   <!-- màu hint -->
+
+    <EditText
+        android:id="@+id/etDisplayName"
+        android:hint="Tên hiển thị (nickname)"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:textColorHint="#ffffff" />   <!-- màu hint -->
+
+    <Button
+        android:id="@+id/btnRegister"
+        android:text="Tạo tài khoản"
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"/>
+
+    <TextView
+        android:id="@+id/tvGoLogin"
+        android:text="Đã có tài khoản? Đăng nhập"
+        android:textColor="#fffffF"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+
+        android:layout_marginTop="12dp"/>
+</LinearLayout>

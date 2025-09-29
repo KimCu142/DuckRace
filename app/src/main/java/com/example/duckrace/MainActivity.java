@@ -1,5 +1,6 @@
 package com.example.duckrace;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.os.Handler;
@@ -11,6 +12,7 @@ import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -21,6 +23,15 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.ListenerRegistration;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,10 +40,12 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private Spinner spDuckCount;
-    private Button btnStart, btnReset;
+    private Button btnStart, btnReset, btnPlayerName;
+    private ImageButton btnAddCoins;
     private LinearLayout lanesContainer;
     private View trackFrame, finishLine;
-    private TextView tvCountdown;
+    private TextView tvCountdown, tvCoins;
+
 
     private final List<DuckRunner> runners = new ArrayList<>();
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -59,6 +72,9 @@ public class MainActivity extends AppCompatActivity {
     // Timer cho tiếng vịt kêu liên tục
     private Handler quackHandler = new Handler(Looper.getMainLooper());
     private Runnable quackRunnable;
+    private FirebaseAuth auth;
+    private FirebaseFirestore db;
+    private ListenerRegistration userReg;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -72,6 +88,33 @@ public class MainActivity extends AppCompatActivity {
         trackFrame = findViewById(R.id.trackFrame);
         finishLine = findViewById(R.id.finishLine);
         tvCountdown = findViewById(R.id.tvCountdown);
+        btnPlayerName = findViewById(R.id.btnPlayerName);
+        tvCoins = findViewById(R.id.tvCoins);
+        btnAddCoins = findViewById(R.id.btnAddCoin);
+        auth = FirebaseAuth.getInstance();
+        db   = FirebaseFirestore.getInstance();
+
+        FirebaseUser current = auth.getCurrentUser();
+        if (current != null) {
+            setupUserRealtime(current.getUid());
+        } else {
+
+            btnPlayerName.setText("Player");
+            tvCoins.setText("Coins: 0");
+        }
+        btnPlayerName.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("Đăng xuất")
+                    .setMessage("Bạn có chắc muốn đăng xuất không?")
+                    .setPositiveButton("đăng xuất", (d, w) -> {
+                        FirebaseAuth.getInstance().signOut();
+                        // Quay về màn hình Login
+                        startActivity(new Intent(MainActivity.this, LoginActivity.class));
+                        finish();
+                    })
+                    .setNegativeButton("Hủy", null)
+                    .show();
+        });
 
         // Spinner 3..8 vịt
         Integer[] counts = new Integer[] { 3, 4, 5, 6, 7, 8 };
@@ -582,4 +625,20 @@ public class MainActivity extends AppCompatActivity {
         public void onNothingSelected(android.widget.AdapterView<?> parent) {
         }
     }
+    private void setupUserRealtime(String uid) {
+        DocumentReference
+                ref = db.collection("users").document(uid);
+        // bỏ listener cũ nếu có
+        if (userReg != null) userReg.remove();
+
+        userReg = ref.addSnapshotListener((snap, e) -> {
+            if (e != null || snap == null || !snap.exists()) return;
+            String name = snap.getString("displayName");
+            Long coins  = snap.getLong("coins");
+            btnPlayerName.setText(name == null ? "Player" : name);
+            tvCoins.setText("Coins: " + (coins == null ? 0 : coins));
+        });
+    }
+
+
 }

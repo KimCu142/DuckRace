@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "78553892397",
+    "project_id": "game-project-232f5",
+    "storage_bucket": "game-project-232f5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:78553892397:android:5176545ec607b5c15d1aa4",
+        "android_client_info": {
+          "package_name": "com.example.duckrace"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDy1yaxLhsm9b_V4dSANHgFgHc9PA6E3-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -31,11 +31,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
+        <!-- đẩy phần còn lại sang phải -->
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1"/>
 
+        <!-- Start / Reset -->
         <Button
             android:id="@+id/btnStart"
             android:layout_width="wrap_content"
@@ -47,7 +49,41 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Reset"
-            android:layout_marginStart="8dp"/>
+            android:layout_marginStart="8dp"
+            />
+        <Button
+            android:id="@+id/btnPlayerName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Player"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:singleLine="true"/>
+
+        <View
+            android:layout_width="8dp"
+            android:layout_height="0dp" />
+
+
+        <TextView
+            android:id="@+id/tvCoins"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Coins: 0"
+            android:layout_marginStart="12dp"
+            android:layout_gravity="center_vertical"/>
+
+        <ImageButton
+            android:id="@+id/btnAddCoin"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Add coin"
+            android:layout_marginTop="8dp"
+             />
+
+
     </LinearLayout>
 
     <!-- Khung đường đua + vạch đích -->
