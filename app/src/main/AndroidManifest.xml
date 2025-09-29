@@ -30,6 +30,12 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".TopUpActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.DuckRace" />
+
     </application>
 
 </manifest>

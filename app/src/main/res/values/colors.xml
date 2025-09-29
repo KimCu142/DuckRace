@@ -2,4 +2,24 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    
+    <!-- TopUp Activity Colors -->
+    <color name="topup_primary_color">#FF6B35</color>
+    <color name="topup_secondary_color">#FFD23F</color>
+    <color name="topup_background">#F0F8FF</color>
+    <color name="topup_panel_bg">#FFFFFF</color>
+    <color name="topup_title_color">#FF6B35</color>
+    <color name="topup_text_color">#2E3A59</color>
+    <color name="topup_balance_color">#27AE60</color>
+    <color name="topup_hint_color">#7F8C8D</color>
+    <color name="topup_input_text_color">#2C3E50</color>
+    <color name="topup_quick_text_color">#FFFFFF</color>
+    <color name="topup_promo_text_color">#8E44AD</color>
+    <color name="topup_button_color">#E74C3C</color>
+    <color name="topup_button_pressed">#C0392B</color>
+    <color name="topup_quick_button">#3498DB</color>
+    <color name="topup_quick_button_pressed">#2980B9</color>
+    <color name="topup_special_button">#9B59B6</color>
+    <color name="topup_special_button_pressed">#8E44AD</color>
+    <color name="topup_panel_border">#E8E8E8</color>
 </resources>

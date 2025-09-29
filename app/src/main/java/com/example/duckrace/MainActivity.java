@@ -8,6 +8,8 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.graphics.drawable.AnimationDrawable;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
@@ -114,7 +116,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
 
             btnPlayerName.setText("Player");
-            tvCoins.setText("Coins: 0");
+            tvCoins.setText("0");
         }
         btnPlayerName.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
@@ -149,6 +151,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnReset.setOnClickListener(v -> resetRace());
+
+        // Nút nạp xu
+        btnAddCoins.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TopUpActivity.class);
+            startActivity(intent);
+        });
 
         // Khởi tạo âm thanh
         initializeSounds();
@@ -694,7 +702,16 @@ public class MainActivity extends AppCompatActivity {
             String name = snap.getString("displayName");
             Long coins  = snap.getLong("coins");
             btnPlayerName.setText(name == null ? "Player" : name);
-            tvCoins.setText("Coins: " + (coins == null ? 0 : coins));
+            
+            // Animate coin update
+            String oldCoinText = tvCoins.getText().toString();
+            String newCoinText = String.valueOf(coins == null ? 0 : coins);
+            
+            if (!oldCoinText.equals(newCoinText)) {
+                animateCoinUpdate(newCoinText);
+            } else {
+                tvCoins.setText(newCoinText);
+            }
         });
     }
 
@@ -778,6 +795,27 @@ public class MainActivity extends AppCompatActivity {
         });
 
         dialog.show();
+    }
+
+    private void animateCoinUpdate(String newCoinText) {
+        Animation bounceAnim = AnimationUtils.loadAnimation(this, R.anim.coin_bounce);
+        bounceAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // Animation started
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                tvCoins.setText(newCoinText);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // Animation repeated
+            }
+        });
+        tvCoins.startAnimation(bounceAnim);
     }
 
 }
