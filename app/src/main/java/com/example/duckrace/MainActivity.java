@@ -12,14 +12,19 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -39,7 +44,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private Spinner spDuckCount;
-    private Button btnStart, btnReset, btnPlayerName;
+    private Button btnStart, btnReset, btnPlayerName, btnBet;
     private ImageButton btnAddCoins;
     private LinearLayout lanesContainer;
     private View trackFrame, finishLine;
@@ -51,10 +56,13 @@ public class MainActivity extends AppCompatActivity {
     private boolean raceFinished = false;
 
     // Tham số "vật lý" (đơn vị: px/s và px/s^2)
+
     private float MIN_SPEED = 120f;
     private float MAX_SPEED = 260f;
     private float BOOST_ACCEL = 220f;
     private float FRICTION = 140f;
+    private float RANDOM_JITTER_ACCEL = 180f; // gia tốc ngẫu nhiên mỗi tick để tạo kịch tính
+
 
     private float finishX = 0f;
 
@@ -74,6 +82,14 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private ListenerRegistration userReg;
 
+    // Tien cuoc
+    private final List<Bet> currentBets = new ArrayList<>();
+
+    private static class Bet {
+        String duckName;
+        int amount;
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,14 +106,16 @@ public class MainActivity extends AppCompatActivity {
         tvCoins = findViewById(R.id.tvCoins);
         btnAddCoins = findViewById(R.id.btnAddCoin);
         auth = FirebaseAuth.getInstance();
-        db   = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
+        btnBet = findViewById(R.id.btnBet);
+        btnBet.setOnClickListener(v -> showBetDialog());
 
         FirebaseUser current = auth.getCurrentUser();
         if (current != null) {
             setupUserRealtime(current.getUid());
         } else {
             btnPlayerName.setText("Player");
-            tvCoins.setText("Coins: 0");
+            tvCoins.setText("0");
         }
         btnPlayerName.setOnClickListener(v -> {
             new AlertDialog.Builder(this)
@@ -131,6 +149,12 @@ public class MainActivity extends AppCompatActivity {
         });
 
         btnReset.setOnClickListener(v -> resetRace());
+
+        // Nút nạp xu
+        btnAddCoins.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, TopUpActivity.class);
+            startActivity(intent);
+        });
 
         // Khởi tạo âm thanh
         initializeSounds();
@@ -370,6 +394,7 @@ public class MainActivity extends AppCompatActivity {
     private void enableControls(boolean enable) {
         spDuckCount.setEnabled(enable);
         btnStart.setEnabled(enable);
+        btnBet.setEnabled(enable);
         btnReset.setEnabled(true);
     }
 
@@ -398,17 +423,30 @@ public class MainActivity extends AppCompatActivity {
             DuckRunner winner = null;
 
             for (DuckRunner r : runners) {
-                // Gia tốc ngắn hạn (boost) + ma sát kéo về tốc độ cơ bản
-                float target = r.baseSpeed;
+                // Tiến hóa offset mục tiêu chậm theo random-walk để tạo khác biệt dài hạn
+                r.targetOffset += (random.nextFloat() * 2f - 1f) * 6f; // thay đổi nhẹ mỗi tick
+                if (r.targetOffset < -60f)
+                    r.targetOffset = -60f;
+                if (r.targetOffset > 60f)
+                    r.targetOffset = 60f;
+
+                // Mục tiêu tốc độ tức thời = base + offset dài hạn + jitter ngắn hạn
+                float jitterSpeed = (random.nextFloat() * 50f - 25f);
+                float target = r.baseSpeed + r.targetOffset + jitterSpeed;
+                // Gia tốc ngắn hạn khi boost và thêm nhiễu gia tốc để tạo vượt mặt
+                float accel = (r.boosting ? BOOST_ACCEL : 0f);
+                float noiseAccel = (random.nextFloat() * 2f - 1f) * RANDOM_JITTER_ACCEL;
                 float dv = target - r.speed;
                 float accel = r.boosting ? BOOST_ACCEL : 0f;
                 r.speed += (dv * 2.0f) * dt + accel * dt;
 
-                // Clamp tốc độ
-                if (r.speed < MIN_SPEED)
-                    r.speed = MIN_SPEED;
-                if (r.speed > MAX_SPEED)
-                    r.speed = MAX_SPEED;
+                // Clamp tốc độ sau khi áp dụng nhiễu
+                float clampMin = (r.minSpeed > 0f) ? r.minSpeed : MIN_SPEED;
+                float clampMax = (r.maxSpeed > 0f) ? r.maxSpeed : MAX_SPEED;
+                if (r.speed < clampMin)
+                    r.speed = clampMin;
+                if (r.speed > clampMax)
+                    r.speed = clampMax;
 
                 // Cập nhật vị trí
                 r.x += r.speed * dt;
@@ -441,7 +479,7 @@ public class MainActivity extends AppCompatActivity {
                 // Phát âm thanh kết thúc
                 playSound(raceFinishSound);
 
-                showWinner(winner);
+                navigateToBetResult(winner);
                 enableControls(true);
             } else {
                 handler.postDelayed(this, 16);
@@ -450,11 +488,102 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void showWinner(DuckRunner winner) {
-        new AlertDialog.Builder(this)
-                .setTitle("Kết quả")
-                .setMessage("🏆 " + winner.name + " thắng cuộc!")
-                .setPositiveButton("OK", null)
-                .show();
+        // legacy popup kept for potential reuse but not called anymore
+        // now navigates to dedicated result screens
+        FirebaseUser user = auth.getCurrentUser();
+        if (user != null && !currentBets.isEmpty()) {
+            int totalReward = 0;
+
+            // Tính tiền thưởng
+            for (Bet bet : currentBets) {
+                if (bet.duckName.equals(winner.name)) {
+                    totalReward += bet.amount * 2; // trả lại gấp đôi số tiền cược
+                }
+            }
+
+            int finalTotalReward = totalReward; // biến final để dùng trong lambda
+            String finalWinnerName = winner.name; // copy tên vịt sang biến final
+
+            if (finalTotalReward > 0) {
+                db.collection("users").document(user.getUid())
+                        .update("coins", FieldValue.increment(finalTotalReward))
+                        .addOnSuccessListener(aVoid -> {
+                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được " + finalTotalReward
+                                    + " xu!";
+                            new AlertDialog.Builder(this)
+                                    .setTitle("Kết quả")
+                                    .setMessage(msg)
+                                    .setPositiveButton("OK", null)
+                                    .show();
+
+                            btnBet.setVisibility(View.VISIBLE); // hiện lại nút sau khi đua xong
+                        });
+            } else {
+                new AlertDialog.Builder(this)
+                        .setTitle("Kết quả")
+                        .setMessage("🏆 " + finalWinnerName + " thắng!\nTiếc quá, bạn không thắng xu nào.")
+                        .setPositiveButton("OK", null)
+                        .show();
+
+                btnBet.setVisibility(View.VISIBLE);
+            }
+        } else {
+            new AlertDialog.Builder(this)
+                    .setTitle("Kết quả")
+                    .setMessage("🏆 " + winner.name + " thắng cuộc!")
+                    .setPositiveButton("OK", null)
+                    .show();
+
+            btnBet.setVisibility(View.VISIBLE);
+        }
+
+        btnBet.setEnabled(true);
+        currentBets.clear(); // reset cược sau khi xử lý
+    }
+
+    private void navigateToBetResult(DuckRunner winner) {
+        FirebaseUser user = auth.getCurrentUser();
+        int totalBet = 0;
+        int totalWin = 0;
+        String winnerName = winner.name;
+
+        if (user != null && !currentBets.isEmpty()) {
+            for (Bet bet : currentBets) {
+                totalBet += bet.amount;
+                if (bet.duckName.equals(winnerName)) {
+                    totalWin += bet.amount * 2; // trả gấp đôi khi thắng
+                }
+            }
+
+            if (totalWin > 0) {
+                // Thắng: cộng xu và mở màn hình Win
+                final int finalTotalWin = totalWin;
+                db.collection("users").document(user.getUid())
+                        .update("coins", FieldValue.increment(totalWin))
+                        .addOnSuccessListener(aVoid -> {
+                            Intent intent = new Intent(MainActivity.this, BetResultWinActivity.class);
+                            intent.putExtra("amount", finalTotalWin);
+                            intent.putExtra("duck", winnerName);
+                            startActivity(intent);
+                        });
+            } else {
+                // Thua: đã trừ xu khi xác nhận cược, chỉ mở màn hình Lose với số đã đặt
+                Intent intent = new Intent(MainActivity.this, BetResultLoseActivity.class);
+                intent.putExtra("amount", totalBet);
+                intent.putExtra("duck", winnerName);
+                startActivity(intent);
+            }
+        } else {
+            // Không đặt cược: chỉ hiển thị win màn không thay đổi xu
+            Intent intent = new Intent(MainActivity.this, BetResultWinActivity.class);
+            intent.putExtra("amount", 0);
+            intent.putExtra("duck", winnerName);
+            startActivity(intent);
+        }
+
+        btnBet.setVisibility(View.VISIBLE);
+        btnBet.setEnabled(true);
+        currentBets.clear();
     }
 
     // Lên lịch "boost" ngẫu nhiên theo nhịp
@@ -628,6 +757,10 @@ public class MainActivity extends AppCompatActivity {
         float baseSpeed = 0f; // mỗi vịt khác nhau nhẹ
         boolean boosting = false;
         Runnable boostRunnable;
+        // Biến cá nhân hóa để tạo giãn cách
+        float minSpeed = 0f;
+        float maxSpeed = 0f;
+        float targetOffset = 0f; // offset chậm biến thiên cộng vào baseSpeed
 
         DuckRunner(String name, ImageView duck, View area) {
             this.name = name;
@@ -694,14 +827,136 @@ public class MainActivity extends AppCompatActivity {
     private void setupUserRealtime(String uid) {
         DocumentReference ref = db.collection("users").document(uid);
         // bỏ listener cũ nếu có
-        if (userReg != null) userReg.remove();
+        if (userReg != null)
+            userReg.remove();
 
         userReg = ref.addSnapshotListener((snap, e) -> {
-            if (e != null || snap == null || !snap.exists()) return;
+            if (e != null || snap == null || !snap.exists())
+                return;
             String name = snap.getString("displayName");
-            Long coins  = snap.getLong("coins");
+            Long coins = snap.getLong("coins");
             btnPlayerName.setText(name == null ? "Player" : name);
-            tvCoins.setText("Coins: " + (coins == null ? 0 : coins));
+
+            // Animate coin update
+            String oldCoinText = tvCoins.getText().toString();
+            String newCoinText = String.valueOf(coins == null ? 0 : coins);
+
+            if (!oldCoinText.equals(newCoinText)) {
+                animateCoinUpdate(newCoinText);
+            } else {
+                tvCoins.setText(newCoinText);
+            }
         });
     }
+
+    private void showBetDialog() {
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog_bet, null);
+        LinearLayout betContainer = view.findViewById(R.id.betContainer);
+
+        // Sinh UI theo số vịt
+        for (DuckRunner r : runners) {
+            View item = LayoutInflater.from(this).inflate(R.layout.item_bet, betContainer, false);
+
+            CheckBox checkBox = item.findViewById(R.id.chkDuck);
+            EditText edtAmount = item.findViewById(R.id.edtAmount);
+
+            checkBox.setText(r.name);
+
+            betContainer.addView(item);
+        }
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .create();
+
+        view.findViewById(R.id.btnConfirmBet).setOnClickListener(v -> {
+            currentBets.clear();
+            int totalBet = 0;
+
+            // Gom danh sách cược
+            for (int i = 0; i < betContainer.getChildCount(); i++) {
+                View item = betContainer.getChildAt(i);
+                CheckBox chk = item.findViewById(R.id.chkDuck);
+                EditText edt = item.findViewById(R.id.edtAmount);
+
+                if (chk.isChecked()) {
+                    int amount = 0;
+                    try {
+                        amount = Integer.parseInt(edt.getText().toString());
+                    } catch (Exception ignored) {
+                    }
+                    if (amount > 0) {
+                        Bet bet = new Bet();
+                        bet.duckName = chk.getText().toString();
+                        bet.amount = amount;
+                        currentBets.add(bet);
+                        totalBet += amount;
+                    }
+                }
+            }
+
+            // Nếu không đặt cược thì vẫn đóng dialog, không báo lỗi
+            if (currentBets.isEmpty()) {
+                dialog.dismiss();
+                return;
+            }
+
+            FirebaseUser user = auth.getCurrentUser();
+            if (user != null) {
+                int finalTotalBet = totalBet;
+                db.collection("users").document(user.getUid()).get()
+                        .addOnSuccessListener(snapshot -> {
+                            if (snapshot.exists()) {
+                                long currentCoins = snapshot.getLong("coins") != null ? snapshot.getLong("coins") : 0;
+
+                                if (currentCoins <= 0) {
+                                    Toast.makeText(this, "Bạn không còn xu để đặt cược!", Toast.LENGTH_SHORT).show();
+                                    currentBets.clear();
+                                } else if (finalTotalBet > currentCoins) {
+                                    Toast.makeText(this,
+                                            "Bạn chỉ có " + currentCoins + " xu, không thể đặt " + finalTotalBet,
+                                            Toast.LENGTH_SHORT).show();
+                                    currentBets.clear();
+                                } else {
+                                    // Đủ tiền → trừ xu
+                                    db.collection("users").document(user.getUid())
+                                            .update("coins", FieldValue.increment(-finalTotalBet))
+                                            .addOnSuccessListener(aVoid -> {
+                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
+                                                        Toast.LENGTH_SHORT).show();
+                                            });
+
+                                    btnBet.setEnabled(false);
+                                    dialog.dismiss();
+                                }
+                            }
+                        });
+            }
+        });
+
+        dialog.show();
+    }
+
+    private void animateCoinUpdate(String newCoinText) {
+        Animation bounceAnim = AnimationUtils.loadAnimation(this, R.anim.coin_bounce);
+        bounceAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // Animation started
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                tvCoins.setText(newCoinText);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // Animation repeated
+            }
+        });
+        tvCoins.startAnimation(bounceAnim);
+    }
+
 }
+

@@ -64,24 +64,47 @@
             android:layout_width="8dp"
             android:layout_height="0dp" />
 
-
-        <TextView
-            android:id="@+id/tvCoins"
+        <!-- Coin Display Container -->
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Coins: 0"
+            android:background="@drawable/coin_display_background"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginStart="12dp"
-            android:layout_gravity="center_vertical"/>
+            android:layout_gravity="center_vertical"
+            android:elevation="4dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_coin"
+                android:layout_marginEnd="6dp"
+                android:contentDescription="Coin icon" />
+
+            <TextView
+                android:id="@+id/tvCoins"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textStyle="bold"
+                android:textColor="#B8860B"
+                android:textSize="16sp"
+                android:minWidth="40dp"
+                android:gravity="center" />
+
+        </LinearLayout>
 
         <ImageButton
             android:id="@+id/btnAddCoin"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@drawable/ic_add_coin"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Add coin"
-            android:layout_marginTop="8dp"
-             />
+            android:layout_marginStart="8dp"
+            android:layout_gravity="center_vertical"
+            android:elevation="2dp" />
 
 
     </LinearLayout>
@@ -134,4 +157,14 @@
         app:layout_constraintBottom_toBottomOf="@id/trackFrame"
         app:layout_constraintStart_toStartOf="@id/trackFrame"
         app:layout_constraintEnd_toEndOf="@id/trackFrame"/>
+
+    <Button
+        android:id="@+id/btnBet"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đặt cược"
+        android:layout_margin="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
