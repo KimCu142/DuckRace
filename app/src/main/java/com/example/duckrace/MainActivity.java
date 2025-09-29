@@ -852,9 +852,13 @@ public class MainActivity extends AppCompatActivity {
                                             Toast.LENGTH_SHORT).show();
                                     currentBets.clear();
                                 } else {
-                                    // Đủ tiền → KHÔNG trừ ngay. Trừ khi thua ở màn hình Lose.
-                                    Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
-                                            Toast.LENGTH_SHORT).show();
+                                    // Đủ tiền → trừ xu
+                                    db.collection("users").document(user.getUid())
+                                            .update("coins", FieldValue.increment(-finalTotalBet))
+                                            .addOnSuccessListener(aVoid -> {
+                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
+                                                        Toast.LENGTH_SHORT).show();
+                                            });
 
                                     btnBet.setEnabled(false);
                                     dialog.dismiss();
