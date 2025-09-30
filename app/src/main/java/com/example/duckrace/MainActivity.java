@@ -476,35 +476,37 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void showWinner(DuckRunner winner) {
-        // legacy popup kept for potential reuse but not called anymore
-        // now navigates to dedicated result screens
         FirebaseUser user = auth.getCurrentUser();
         if (user != null && !currentBets.isEmpty()) {
             int totalReward = 0;
 
+            // Tính multiplier theo số vịt
+            int duckCount = runners.size();
+            int multiplier = duckCount - 1; // 3 vịt -> x2, 4 vịt -> x3, ...
+
             // Tính tiền thưởng
             for (Bet bet : currentBets) {
                 if (bet.duckName.equals(winner.name)) {
-                    totalReward += bet.amount * 2; // trả lại gấp đôi số tiền cược
+                    totalReward += bet.amount * multiplier;
                 }
             }
 
-            int finalTotalReward = totalReward; // biến final để dùng trong lambda
-            String finalWinnerName = winner.name; // copy tên vịt sang biến final
+            int finalTotalReward = totalReward;
+            String finalWinnerName = winner.name;
 
             if (finalTotalReward > 0) {
                 db.collection("users").document(user.getUid())
                         .update("coins", FieldValue.increment(finalTotalReward))
                         .addOnSuccessListener(aVoid -> {
-                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được " + finalTotalReward
-                                    + " xu!";
+                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được "
+                                    + finalTotalReward + " xu!";
                             new AlertDialog.Builder(this)
                                     .setTitle("Kết quả")
                                     .setMessage(msg)
                                     .setPositiveButton("OK", null)
                                     .show();
 
-                            btnBet.setVisibility(View.VISIBLE); // hiện lại nút sau khi đua xong
+                            btnBet.setVisibility(View.VISIBLE);
                         });
             } else {
                 new AlertDialog.Builder(this)
@@ -526,7 +528,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         btnBet.setEnabled(true);
-        currentBets.clear(); // reset cược sau khi xử lý
+        currentBets.clear();
     }
 
     private void navigateToBetResult(DuckRunner winner) {
@@ -536,15 +538,17 @@ public class MainActivity extends AppCompatActivity {
         String winnerName = winner.name;
 
         if (user != null && !currentBets.isEmpty()) {
+            int duckCount = runners.size();
+            int multiplier = duckCount - 1;
+
             for (Bet bet : currentBets) {
                 totalBet += bet.amount;
                 if (bet.duckName.equals(winnerName)) {
-                    totalWin += bet.amount * 2; // trả gấp đôi khi thắng
+                    totalWin += bet.amount * multiplier;
                 }
             }
 
             if (totalWin > 0) {
-                // Thắng: cộng xu và mở màn hình Win
                 final int finalTotalWin = totalWin;
                 db.collection("users").document(user.getUid())
                         .update("coins", FieldValue.increment(totalWin))
@@ -555,14 +559,12 @@ public class MainActivity extends AppCompatActivity {
                             startActivity(intent);
                         });
             } else {
-                // Thua: đã trừ xu khi xác nhận cược, chỉ mở màn hình Lose với số đã đặt
                 Intent intent = new Intent(MainActivity.this, BetResultLoseActivity.class);
                 intent.putExtra("amount", totalBet);
                 intent.putExtra("duck", winnerName);
                 startActivity(intent);
             }
         } else {
-            // Không đặt cược: chỉ hiển thị win màn không thay đổi xu
             Intent intent = new Intent(MainActivity.this, BetResultWinActivity.class);
             intent.putExtra("amount", 0);
             intent.putExtra("duck", winnerName);
@@ -912,10 +914,16 @@ public class MainActivity extends AppCompatActivity {
                                             .addOnSuccessListener(aVoid -> {
                                                 Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
                                                         Toast.LENGTH_SHORT).show();
-                                            });
 
-                                    btnBet.setEnabled(false);
-                                    dialog.dismiss();
+                                                // Ẩn nút cược để tránh bấm thêm lần nữa
+                                                btnBet.setEnabled(false);
+                                                dialog.dismiss();
+
+                                                // 🚀 Gọi đua luôn sau khi xác nhận cược
+                                                if (!raceRunning) {
+                                                    startCountdownThenRace();
+                                                }
+                                            });
                                 }
                             }
                         });
