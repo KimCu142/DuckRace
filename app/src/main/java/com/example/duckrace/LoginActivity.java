@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.duckrace.services.MusicService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -24,6 +25,8 @@ public class LoginActivity extends AppCompatActivity {
         // Nếu đã đăng nhập -> vào Main luôn
         FirebaseUser current = auth.getCurrentUser();
         if (current != null) { goMain(); return; }
+
+        startService(new Intent(this, MusicService.class));
 
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
@@ -49,8 +52,17 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void goMain() {
+        stopService(new Intent(this, MusicService.class));
         startActivity(new Intent(this, MainActivity.class));
         finish(); // không quay lại login khi bấm back
+    }
+
+    
+    @Override
+    public void onBackPressed() {
+        // Người dùng thoát app từ màn Login -> dừng nhạc
+        stopService(new Intent(this, MusicService.class));
+        super.onBackPressed();
     }
 
     private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }

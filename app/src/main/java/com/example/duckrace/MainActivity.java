@@ -602,7 +602,7 @@ public class MainActivity extends AppCompatActivity {
         if (mediaPlayer != null) {
             try {
                 if (mediaPlayer.isPlaying()) return;
-                mediaPlayer.seekTo(0);
+                mediaPlayer.seekTo(200);
                 mediaPlayer.start();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -657,7 +657,7 @@ public class MainActivity extends AppCompatActivity {
     private void playGoSound() {
         if (goSound != null) {
             try {
-                goSound.seekTo(0);
+                goSound.seekTo(2000); 
                 goSound.start();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -669,7 +669,7 @@ public class MainActivity extends AppCompatActivity {
         if (goSound != null && goSound.isPlaying()) {
             try {
                 goSound.pause();
-                 goSound.seekTo(2000);
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }
