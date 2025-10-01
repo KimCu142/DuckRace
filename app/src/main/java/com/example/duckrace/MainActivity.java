@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
     // Tien cuoc
     private final List<Bet> currentBets = new ArrayList<>();
 
-    private static class Bet {
+    private static class Bet implements java.io.Serializable {
         String duckName;
         int amount;
     }
@@ -494,56 +494,55 @@ public class MainActivity extends AppCompatActivity {
 
     private void showWinner(DuckRunner winner) {
         FirebaseUser user = auth.getCurrentUser();
+        int totalBet = 0;
+        int totalWin = 0;
+        String winnerName = winner.name;
+
+        // Create bet data string
+        StringBuilder betData = new StringBuilder();
+        for (Bet bet : currentBets) {
+            betData.append(bet.duckName).append(":").append(bet.amount).append(",");
+        }
+        String betDataString = betData.toString();
+
         if (user != null && !currentBets.isEmpty()) {
-            int totalReward = 0;
-
-            // Tính multiplier theo số vịt
             int duckCount = runners.size();
-            int multiplier = duckCount - 1; // 3 vịt -> x2, 4 vịt -> x3, ...
+            int multiplier = duckCount - 1;
 
-            // Tính tiền thưởng
             for (Bet bet : currentBets) {
-                if (bet.duckName.equals(winner.name)) {
-                    totalReward += bet.amount * multiplier;
+                totalBet += bet.amount;
+                if (bet.duckName.equals(winnerName)) {
+                    totalWin += bet.amount * multiplier;
                 }
             }
 
-            int finalTotalReward = totalReward;
-            String finalWinnerName = winner.name;
-
-            if (finalTotalReward > 0) {
+            if (totalWin > 0) {
+                final int finalTotalWin = totalWin;
                 db.collection("users").document(user.getUid())
-                        .update("coins", FieldValue.increment(finalTotalReward))
+                        .update("coins", FieldValue.increment(totalWin))
                         .addOnSuccessListener(aVoid -> {
-                            String msg = "🏆 " + finalWinnerName + " thắng!\nBạn nhận được "
-                                    + finalTotalReward + " xu!";
-                            new AlertDialog.Builder(this)
-                                    .setTitle("Kết quả")
-                                    .setMessage(msg)
-                                    .setPositiveButton("OK", null)
-                                    .show();
-
-                            btnBet.setVisibility(View.VISIBLE);
+                            Intent intent = new Intent(MainActivity.this, BetResultWinActivity.class);
+                            intent.putExtra("amount", finalTotalWin);
+                            intent.putExtra("duck", winnerName);
+                            intent.putExtra("betData", betDataString);
+                            startActivity(intent);
                         });
             } else {
-                new AlertDialog.Builder(this)
-                        .setTitle("Kết quả")
-                        .setMessage("🏆 " + finalWinnerName + " thắng!\nTiếc quá, bạn không thắng xu nào.")
-                        .setPositiveButton("OK", null)
-                        .show();
-
-                btnBet.setVisibility(View.VISIBLE);
+                Intent intent = new Intent(MainActivity.this, BetResultLoseActivity.class);
+                intent.putExtra("amount", totalBet);
+                intent.putExtra("duck", winnerName);
+                intent.putExtra("betData", betDataString);
+                startActivity(intent);
             }
         } else {
-            new AlertDialog.Builder(this)
-                    .setTitle("Kết quả")
-                    .setMessage("🏆 " + winner.name + " thắng cuộc!")
-                    .setPositiveButton("OK", null)
-                    .show();
-
-            btnBet.setVisibility(View.VISIBLE);
+            Intent intent = new Intent(MainActivity.this, BetResultLoseActivity.class);
+            intent.putExtra("amount", 0);
+            intent.putExtra("duck", winnerName);
+            intent.putExtra("betData", betDataString);
+            startActivity(intent);
         }
 
+        btnBet.setVisibility(View.VISIBLE);
         btnBet.setEnabled(true);
         currentBets.clear();
     }
@@ -973,6 +972,7 @@ public class MainActivity extends AppCompatActivity {
         tvCoins.startAnimation(bounceAnim);
     }
 
+
     // ======= Full Screen Methods =======
     private void hideSystemUI() {
         View decorView = getWindow().getDecorView();
@@ -992,5 +992,4 @@ public class MainActivity extends AppCompatActivity {
             hideSystemUI();
         }
     }
-
 }
