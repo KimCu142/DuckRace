@@ -531,6 +531,7 @@ public class MainActivity extends AppCompatActivity {
                             intent.putExtra("amount", finalTotalWin);
                             intent.putExtra("duck", winnerName);
                             intent.putExtra("betData", betDataString);
+                            intent.putExtra("duckCount", duckCount);
                             startActivity(intent);
                         });
             } else {
@@ -538,6 +539,7 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("amount", totalBet);
                 intent.putExtra("duck", winnerName);
                 intent.putExtra("betData", betDataString);
+                intent.putExtra("duckCount", duckCount);
                 startActivity(intent);
             }
         } else {
@@ -545,6 +547,7 @@ public class MainActivity extends AppCompatActivity {
             intent.putExtra("amount", 0);
             intent.putExtra("duck", winnerName);
             intent.putExtra("betData", betDataString);
+            intent.putExtra("duckCount", runners.size());
             startActivity(intent);
         }
 

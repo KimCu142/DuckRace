@@ -41,6 +41,19 @@
         android:textSize="24sp"
         android:textStyle="bold" />
 
+    <!-- Message when user placed no bets -->
+    <TextView
+        android:id="@+id/tvNoBetMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tvTotalWin"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"
+        android:text="You didn't place any bet."
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:visibility="gone" />
+
     <!-- Duck Ranking Container: two columns (left 3, right 3) -->
     <LinearLayout
         android:id="@+id/duckRankingContainer"

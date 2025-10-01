@@ -24,7 +24,7 @@ public class BetResultWinActivity extends AppCompatActivity {
     private LinearLayout duckRankingContainer;
     private LinearLayout leftColumn;
     private LinearLayout rightColumn;
-    private TextView tvVictory, tvTotalWin;
+    private TextView tvVictory, tvTotalWin, tvNoBetMessage;
     private Button btnContinue;
 
     private List<DuckResult> duckResults = new ArrayList<>();
@@ -67,6 +67,7 @@ public class BetResultWinActivity extends AppCompatActivity {
         leftColumn = findViewById(R.id.leftColumn);
         rightColumn = findViewById(R.id.rightColumn);
         btnContinue = findViewById(R.id.btnContinue);
+        tvNoBetMessage = findViewById(R.id.tvNoBetMessage);
 
         btnContinue.setOnClickListener(v -> {
             finish();
@@ -79,8 +80,8 @@ public class BetResultWinActivity extends AppCompatActivity {
         int[] duckIcons = { R.drawable.duck_run, R.drawable.duck_run, R.drawable.duck_run,
                 R.drawable.duck_run, R.drawable.duck_run, R.drawable.duck_run };
 
-        // Show up to 5 ducks (1-3 left, 4-5 right)
-        int maxDucks = Math.min(duckNames.length, 5);
+        // Show up to actual race duck count
+        int maxDucks = Math.min(duckNames.length, getIntent().getIntExtra("duckCount", 5));
         for (int i = 0; i < maxDucks; i++) {
             DuckResult result = new DuckResult();
             result.name = duckNames[i];
@@ -121,12 +122,29 @@ public class BetResultWinActivity extends AppCompatActivity {
         tvVictory.setText("You won the bet.");
         tvTotalWin.setText("Tổng thắng: +" + winAmount + " xu");
 
-        // Create duck ranking rows: 1-3 on left, 4-6 on right
-        for (int i = 0; i < duckResults.size(); i++) {
-            DuckResult result = duckResults.get(i);
-            LinearLayout parent = (i < 3) ? leftColumn : rightColumn;
-            View rowView = createDuckRow(result, i + 1, parent);
-            parent.addView(rowView);
+        boolean hasAnyBet = false;
+        if (userBets != null) {
+            for (Bet b : userBets) {
+                if (b != null && b.amount > 0) { hasAnyBet = true; break; }
+            }
+        }
+
+        if (!hasAnyBet) {
+            duckRankingContainer.setVisibility(View.GONE);
+            if (tvNoBetMessage != null) {
+                tvNoBetMessage.setVisibility(View.VISIBLE);
+                tvNoBetMessage.setText("You didn't place any bet.");
+            }
+        } else {
+            if (tvNoBetMessage != null) tvNoBetMessage.setVisibility(View.GONE);
+            duckRankingContainer.setVisibility(View.VISIBLE);
+            // Create duck ranking rows: 1-3 on left, remaining on right
+            for (int i = 0; i < duckResults.size(); i++) {
+                DuckResult result = duckResults.get(i);
+                LinearLayout parent = (i < 3) ? leftColumn : rightColumn;
+                View rowView = createDuckRow(result, i + 1, parent);
+                parent.addView(rowView);
+            }
         }
     }
 
