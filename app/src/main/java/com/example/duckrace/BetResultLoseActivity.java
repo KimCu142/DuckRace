@@ -1,101 +1,220 @@
 package com.example.duckrace;
 
-import android.animation.ObjectAnimator;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.view.animation.DecelerateInterpolator;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FieldValue;
-import com.google.firebase.firestore.FirebaseFirestore;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class BetResultLoseActivity extends AppCompatActivity {
 
-    private MediaPlayer music;
+    private MediaPlayer loseSound;
+    private LinearLayout duckRankingContainer;
+    private LinearLayout leftColumn;
+    private LinearLayout rightColumn;
+    private TextView tvDefeat, tvTotalLoss;
+    private Button btnContinue;
+
+    private List<DuckResult> duckResults = new ArrayList<>();
+    private String winnerName;
+    private int lossAmount;
+    private Bet[] userBets;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_bet_result_lose);
 
-        ImageView imgSad = findViewById(R.id.imgSad);
-        TextView tvTitle = findViewById(R.id.tvTitle);
-        TextView tvAmount = findViewById(R.id.tvAmount);
-        Button btnTryAgain = findViewById(R.id.btnTryAgain);
+        // Get data from intent
+        Intent intent = getIntent();
+        winnerName = intent.getStringExtra("duck");
+        lossAmount = intent.getIntExtra("amount", 0);
+        String betDataString = intent.getStringExtra("betData");
 
-        int amount = getIntent().getIntExtra("amount", 0);
-        String duckName = getIntent().getStringExtra("duck");
-        if (duckName == null)
-            duckName = "Your duck";
-        tvTitle.setText("Lost! " + duckName + " was overtaken");
-        tvAmount.setText("-0");
+        // Parse bet data
+        userBets = parseBetData(betDataString);
 
-        // Animate: wobble the icon and fade the amount in
-        ObjectAnimator rotate = ObjectAnimator.ofFloat(imgSad, "rotation", -8f, 8f, 0f);
-        rotate.setDuration(900);
-        rotate.setInterpolator(new DecelerateInterpolator());
-        rotate.start();
+        // Initialize views
+        initViews();
 
-        ObjectAnimator alpha = ObjectAnimator.ofFloat(tvAmount, "alpha", 0f, 1f);
-        alpha.setDuration(600);
-        alpha.start();
+        // Create mock duck results for ranking
+        createDuckResults();
 
-        // Count-down animation for coins
-        android.animation.ValueAnimator counter = android.animation.ValueAnimator.ofInt(0, amount);
-        counter.setDuration(Math.min(2000, 400 + amount * 10L));
-        counter.addUpdateListener(a -> tvAmount.setText("-" + (Integer) a.getAnimatedValue()));
-        counter.start();
+        // Setup UI
+        setupUI();
 
-        btnTryAgain.setOnClickListener(v -> finish());
+        // Play lose sound
+        playLoseSound();
 
-        // Subtle screen shake
-        imgSad.postDelayed(() -> {
-            imgSad.animate().translationXBy(-8).setDuration(40)
-                    .withEndAction(() -> imgSad.animate().translationXBy(16).setDuration(80)
-                            .withEndAction(() -> imgSad.animate().translationXBy(-8).setDuration(40).start()).start())
-                    .start();
-        }, 250);
+    }
 
-        // Deduct coins with a slight delay to sync with animation
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user != null && amount > 0) {
-            tvAmount.postDelayed(() -> {
-                FirebaseFirestore.getInstance().collection("users").document(user.getUid())
-                        .update("coins", FieldValue.increment(-amount))
-                        .addOnSuccessListener(
-                                aVoid -> Toast.makeText(this, "-" + amount + " coins", Toast.LENGTH_SHORT).show());
-            }, 500);
+    private void initViews() {
+        tvDefeat = findViewById(R.id.tvDefeat);
+        tvTotalLoss = findViewById(R.id.tvTotalLoss);
+        duckRankingContainer = findViewById(R.id.duckRankingContainer);
+        leftColumn = findViewById(R.id.leftColumn);
+        rightColumn = findViewById(R.id.rightColumn);
+        btnContinue = findViewById(R.id.btnContinue);
+
+        btnContinue.setOnClickListener(v -> {
+            finish();
+        });
+    }
+
+    private void createDuckResults() {
+        // Create results for all ducks with realistic ranking
+        String[] duckNames = { "Vịt 1", "Vịt 2", "Vịt 3", "Vịt 4", "Vịt 5", "Vịt 6" };
+        int[] duckIcons = { R.drawable.duck_run, R.drawable.duck_run, R.drawable.duck_run,
+                R.drawable.duck_run, R.drawable.duck_run, R.drawable.duck_run };
+
+        // Show up to 5 ducks (1-3 left, 4-5 right)
+        int maxDucks = Math.min(duckNames.length, 5);
+        for (int i = 0; i < maxDucks; i++) {
+            DuckResult result = new DuckResult();
+            result.name = duckNames[i];
+            result.icon = duckIcons[i];
+            result.isWinner = duckNames[i].equals(winnerName);
+
+            // Find bet amount for this duck
+            result.betAmount = 0;
+            if (userBets != null) {
+                for (Bet bet : userBets) {
+                    if (bet.duckName.equals(duckNames[i])) {
+                        result.betAmount = bet.amount;
+                        break;
+                    }
+                }
+            }
+
+            result.rank = i + 1; // Will be updated after sorting
+            duckResults.add(result);
         }
 
-        // Music on lose (uses res/raw/lose.mp3)
+        // Sort by winner first, then by bet amount (higher bets first)
+        Collections.sort(duckResults, (a, b) -> {
+            if (a.isWinner && !b.isWinner)
+                return -1;
+            if (!a.isWinner && b.isWinner)
+                return 1;
+            return Integer.compare(b.betAmount, a.betAmount);
+        });
+
+        // Update ranks after sorting
+        for (int i = 0; i < duckResults.size(); i++) {
+            duckResults.get(i).rank = i + 1;
+        }
+    }
+
+    private void setupUI() {
+        tvDefeat.setText("You lose the bet.");
+        tvTotalLoss.setText("Tổng thua: -" + lossAmount + " xu");
+
+        // Create duck ranking rows: 1-3 on left, 4-6 on right
+        for (int i = 0; i < duckResults.size(); i++) {
+            DuckResult result = duckResults.get(i);
+            LinearLayout parent = (i < 3) ? leftColumn : rightColumn;
+            View rowView = createDuckRow(result, i + 1, parent);
+            parent.addView(rowView);
+        }
+    }
+
+    private View createDuckRow(DuckResult result, int position, LinearLayout parent) {
+        View rowView = getLayoutInflater().inflate(R.layout.item_duck_result, parent, false);
+
+        ImageView imgDuck = rowView.findViewById(R.id.imgDuck);
+        TextView tvDuckName = rowView.findViewById(R.id.tvDuckName);
+        TextView tvDuckRank = rowView.findViewById(R.id.tvDuckRank);
+        TextView tvBetAmount = rowView.findViewById(R.id.tvBetAmount);
+        View mvpBadge = rowView.findViewById(R.id.mvpBadge);
+
+        // Set duck icon
+        imgDuck.setImageResource(result.icon);
+
+        // Set duck name
+        tvDuckName.setText(result.name);
+
+        // Set rank
+        tvDuckRank.setText(result.rank + ".");
+
+        // Set bet amount only
+        tvBetAmount.setText(result.betAmount + " xu");
+
+        // Highlight winner
+        if (result.isWinner) {
+            rowView.setBackgroundColor(getResources().getColor(R.color.winner_background, null));
+            mvpBadge.setVisibility(View.VISIBLE);
+        } else {
+            rowView.setBackgroundColor(getResources().getColor(R.color.loser_background, null));
+            mvpBadge.setVisibility(View.GONE);
+        }
+
+        return rowView;
+    }
+
+    private void playLoseSound() {
         try {
-            music = MediaPlayer.create(this, R.raw.lose);
-            if (music != null) {
-                music.setVolume(0.8f, 0.8f);
-                music.start();
+            loseSound = MediaPlayer.create(this, R.raw.lose);
+            if (loseSound != null) {
+                loseSound.start();
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (music != null) {
-            try {
-                music.release();
-            } catch (Exception ignored) {
-            }
-            music = null;
+        if (loseSound != null) {
+            loseSound.release();
+            loseSound = null;
         }
+    }
+
+    private static class Bet implements java.io.Serializable {
+        String duckName;
+        int amount;
+    }
+
+    private Bet[] parseBetData(String betDataString) {
+        if (betDataString == null || betDataString.isEmpty()) {
+            return new Bet[0];
+        }
+
+        List<Bet> bets = new ArrayList<>();
+        String[] betEntries = betDataString.split(",");
+
+        for (String entry : betEntries) {
+            if (!entry.isEmpty()) {
+                String[] parts = entry.split(":");
+                if (parts.length == 2) {
+                    Bet bet = new Bet();
+                    bet.duckName = parts[0];
+                    bet.amount = Integer.parseInt(parts[1]);
+                    bets.add(bet);
+                }
+            }
+        }
+
+        return bets.toArray(new Bet[0]);
+    }
+
+    private static class DuckResult {
+        String name;
+        int icon;
+        boolean isWinner;
+        int betAmount;
+        int rank;
     }
 }

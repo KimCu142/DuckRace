@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="66dp"
+    android:minHeight="66dp"
+    android:layout_marginVertical="4dp"
+    android:background="@drawable/duck_result_row_background"
+    android:padding="12dp">
+
+    <!-- Duck Rank -->
+    <TextView
+        android:id="@+id/tvDuckRank"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="0dp"
+        android:layout_marginEnd="12dp"
+        android:text="1."
+        android:textColor="#FFD700"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <!-- Duck Avatar -->
+    <ImageView
+        android:id="@+id/imgDuck"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_toEndOf="@id/tvDuckRank"
+        android:layout_centerVertical="true"
+        android:src="@drawable/cute_duck_animated_set_1" />
+
+    <!-- MVP Badge -->
+    <RelativeLayout
+        android:id="@+id/mvpBadge"
+        android:layout_width="40dp"
+        android:layout_height="20dp"
+        android:layout_alignStart="@id/imgDuck"
+        android:layout_alignBottom="@id/imgDuck"
+        android:layout_marginStart="5dp"
+        android:layout_marginBottom="5dp"
+        android:background="@drawable/mvp_badge_background"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="MVP"
+            android:textColor="#FFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </RelativeLayout>
+
+    <!-- Duck Name -->
+    <TextView
+        android:id="@+id/tvDuckName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/imgDuck"
+        android:layout_marginStart="12dp"
+        android:layout_centerVertical="true"
+        android:text="Vịt 1"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- Bet Amount -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tiền cược"
+            android:textColor="#CCCCCC"
+            android:textSize="10sp" />
+
+        <TextView
+            android:id="@+id/tvBetAmount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100 xu"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</RelativeLayout>
