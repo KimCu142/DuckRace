@@ -35,10 +35,11 @@
         android:id="@+id/mvpBadge"
         android:layout_width="40dp"
         android:layout_height="20dp"
-        android:layout_alignStart="@id/imgDuck"
-        android:layout_alignBottom="@id/imgDuck"
-        android:layout_marginStart="5dp"
-        android:layout_marginBottom="5dp"
+        android:layout_toEndOf="@id/tvDuckRank"
+        android:layout_toStartOf="@id/imgDuck"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
         android:background="@drawable/mvp_badge_background"
         android:visibility="gone">
 
