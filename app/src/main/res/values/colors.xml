@@ -22,4 +22,10 @@
     <color name="topup_special_button">#9B59B6</color>
     <color name="topup_special_button_pressed">#8E44AD</color>
     <color name="topup_panel_border">#E8E8E8</color>
+    
+    <!-- Bet Result Colors -->
+    <color name="winner_background">#1e3a8a</color>
+    <color name="loser_background">#7f1d1d</color>
+    <color name="win_color">#00FF00</color>
+    <color name="lose_color">#FF4444</color>
 </resources>
