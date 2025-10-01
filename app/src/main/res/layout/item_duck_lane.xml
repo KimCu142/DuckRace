@@ -9,6 +9,13 @@
     android:gravity="center_vertical"
     android:baselineAligned="false">
 
+    <CheckBox
+        android:id="@+id/chkDuck"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:paddingEnd="4dp"/>
+
     <TextView
         android:id="@+id/tvName"
         android:layout_width="57dp"
@@ -63,4 +70,13 @@
             tools:src="@drawable/wave"
             tools:visibility="visible" />
     </FrameLayout>
+
+    <EditText
+        android:id="@+id/edtAmount"
+        android:layout_width="70dp"
+        android:layout_height="wrap_content"
+        android:hint="Xu"
+        android:inputType="number"
+        android:textSize="12sp"
+        android:gravity="center"/>
 </LinearLayout>

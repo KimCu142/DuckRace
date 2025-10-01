@@ -46,7 +46,7 @@ import java.util.Random;
 public class MainActivity extends AppCompatActivity {
 
     private Spinner spDuckCount;
-    private Button btnStart, btnReset, btnPlayerName, btnBet;
+    private Button btnStart, btnReset, btnPlayerName, btnConfirmBet;
     private ImageButton btnAddCoins;
     private LinearLayout lanesContainer;
     private View trackFrame, finishLine;
@@ -117,8 +117,8 @@ public class MainActivity extends AppCompatActivity {
         btnAddCoins = findViewById(R.id.btnAddCoin);
         auth = FirebaseAuth.getInstance();
         db = FirebaseFirestore.getInstance();
-        btnBet = findViewById(R.id.btnBet);
-        btnBet.setOnClickListener(v -> showBetDialog());
+        btnConfirmBet = findViewById(R.id.btnConfirmBet);
+        btnConfirmBet.setOnClickListener(v -> confirmBetAndStartRace());
 
         FirebaseUser current = auth.getCurrentUser();
         if (current != null) {
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Spinner 3..8 vịt
-        Integer[] counts = new Integer[] { 3, 4, 5, 6, 7, 8 };
+        Integer[] counts = new Integer[] { 3, 4, 5 };
         ArrayAdapter<Integer> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, counts);
         spDuckCount.setAdapter(adapter);
         spDuckCount.setSelection(2); // mặc định 5 vịt
@@ -417,7 +417,7 @@ public class MainActivity extends AppCompatActivity {
     private void enableControls(boolean enable) {
         spDuckCount.setEnabled(enable);
         btnStart.setEnabled(enable);
-        btnBet.setEnabled(enable);
+        btnConfirmBet.setEnabled(enable);
         btnReset.setEnabled(true);
     }
 
@@ -548,8 +548,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }
 
-        btnBet.setVisibility(View.VISIBLE);
-        btnBet.setEnabled(true);
+        btnConfirmBet.setVisibility(View.VISIBLE);
+        btnConfirmBet.setEnabled(true);
         currentBets.clear();
     }
 
@@ -593,8 +593,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         }
 
-        btnBet.setVisibility(View.VISIBLE);
-        btnBet.setEnabled(true);
+        btnConfirmBet.setVisibility(View.VISIBLE);
+        btnConfirmBet.setEnabled(true);
         currentBets.clear();
     }
 
@@ -863,98 +863,68 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void showBetDialog() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_bet, null);
-        LinearLayout betContainer = view.findViewById(R.id.betContainer);
+    private void confirmBetAndStartRace() {
+        currentBets.clear();
+        int totalBet = 0;
 
-        // Sinh UI theo số vịt
-        for (DuckRunner r : runners) {
-            View item = LayoutInflater.from(this).inflate(R.layout.item_bet, betContainer, false);
+        // Duyệt qua từng lane
+        for (int i = 0; i < lanesContainer.getChildCount(); i++) {
+            View lane = lanesContainer.getChildAt(i);
+            CheckBox chk = lane.findViewById(R.id.chkDuck);
+            EditText edt = lane.findViewById(R.id.edtAmount);
 
-            CheckBox checkBox = item.findViewById(R.id.chkDuck);
-            EditText edtAmount = item.findViewById(R.id.edtAmount);
-
-            checkBox.setText(r.name);
-
-            betContainer.addView(item);
-        }
-
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setView(view)
-                .create();
-
-        view.findViewById(R.id.btnConfirmBet).setOnClickListener(v -> {
-            currentBets.clear();
-            int totalBet = 0;
-
-            // Gom danh sách cược
-            for (int i = 0; i < betContainer.getChildCount(); i++) {
-                View item = betContainer.getChildAt(i);
-                CheckBox chk = item.findViewById(R.id.chkDuck);
-                EditText edt = item.findViewById(R.id.edtAmount);
-
-                if (chk.isChecked()) {
-                    int amount = 0;
-                    try {
-                        amount = Integer.parseInt(edt.getText().toString());
-                    } catch (Exception ignored) {
-                    }
-                    if (amount > 0) {
-                        Bet bet = new Bet();
-                        bet.duckName = chk.getText().toString();
-                        bet.amount = amount;
-                        currentBets.add(bet);
-                        totalBet += amount;
-                    }
+            if (chk != null && chk.isChecked()) {
+                int amount = 0;
+                try {
+                    amount = Integer.parseInt(edt.getText().toString());
+                } catch (Exception ignored) {}
+                if (amount > 0) {
+                    Bet bet = new Bet();
+                    bet.duckName = chk.getText().toString().isEmpty()
+                            ? "Vịt " + (i + 1)
+                            : chk.getText().toString();
+                    bet.amount = amount;
+                    currentBets.add(bet);
+                    totalBet += amount;
                 }
             }
+        }
 
-            // Nếu không đặt cược thì vẫn đóng dialog, không báo lỗi
-            if (currentBets.isEmpty()) {
-                dialog.dismiss();
-                return;
-            }
+        if (currentBets.isEmpty()) {
+            Toast.makeText(this, "Bạn chưa đặt cược!", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
-            FirebaseUser user = auth.getCurrentUser();
-            if (user != null) {
-                int finalTotalBet = totalBet;
-                db.collection("users").document(user.getUid()).get()
-                        .addOnSuccessListener(snapshot -> {
-                            if (snapshot.exists()) {
-                                long currentCoins = snapshot.getLong("coins") != null ? snapshot.getLong("coins") : 0;
+        FirebaseUser user = auth.getCurrentUser();
+        if (user != null) {
+            int finalTotalBet = totalBet;
+            db.collection("users").document(user.getUid()).get()
+                    .addOnSuccessListener(snapshot -> {
+                        if (snapshot.exists()) {
+                            long currentCoins = snapshot.getLong("coins") != null ? snapshot.getLong("coins") : 0;
 
-                                if (currentCoins <= 0) {
-                                    Toast.makeText(this, "Bạn không còn xu để đặt cược!", Toast.LENGTH_SHORT).show();
-                                    currentBets.clear();
-                                } else if (finalTotalBet > currentCoins) {
-                                    Toast.makeText(this,
-                                            "Bạn chỉ có " + currentCoins + " xu, không thể đặt " + finalTotalBet,
-                                            Toast.LENGTH_SHORT).show();
-                                    currentBets.clear();
-                                } else {
-                                    // Đủ tiền → trừ xu
-                                    db.collection("users").document(user.getUid())
-                                            .update("coins", FieldValue.increment(-finalTotalBet))
-                                            .addOnSuccessListener(aVoid -> {
-                                                Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!",
-                                                        Toast.LENGTH_SHORT).show();
-
-                                                // Ẩn nút cược để tránh bấm thêm lần nữa
-                                                btnBet.setEnabled(false);
-                                                dialog.dismiss();
-
-                                                // 🚀 Gọi đua luôn sau khi xác nhận cược
-                                                if (!raceRunning) {
-                                                    startCountdownThenRace();
-                                                }
-                                            });
-                                }
+                            if (currentCoins <= 0) {
+                                Toast.makeText(this, "Bạn không còn xu!", Toast.LENGTH_SHORT).show();
+                                currentBets.clear();
+                            } else if (finalTotalBet > currentCoins) {
+                                Toast.makeText(this,
+                                        "Bạn chỉ có " + currentCoins + " xu, không thể đặt " + finalTotalBet,
+                                        Toast.LENGTH_SHORT).show();
+                                currentBets.clear();
+                            } else {
+                                db.collection("users").document(user.getUid())
+                                        .update("coins", FieldValue.increment(-finalTotalBet))
+                                        .addOnSuccessListener(aVoid -> {
+                                            Toast.makeText(this, "Bạn đã đặt " + finalTotalBet + " xu!", Toast.LENGTH_SHORT).show();
+                                            btnConfirmBet.setEnabled(false);
+                                            if (!raceRunning) {
+                                                startCountdownThenRace();
+                                            }
+                                        });
                             }
-                        });
-            }
-        });
-
-        dialog.show();
+                        }
+                    });
+        }
     }
 
     private void animateCoinUpdate(String newCoinText) {

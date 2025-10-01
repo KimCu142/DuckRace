@@ -189,10 +189,10 @@
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <Button
-        android:id="@+id/btnBet"
+        android:id="@+id/btnConfirmBet"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Đặt cược"
+        android:text="Xác nhận cược"
         android:layout_margin="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
