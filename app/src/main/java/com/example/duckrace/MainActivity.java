@@ -96,6 +96,11 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // Thiết lập full screen
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams params = getWindow().getAttributes();
+            params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(params);
+        }
         hideSystemUI();
 
         setContentView(R.layout.activity_main);
@@ -279,6 +284,7 @@ public class MainActivity extends AppCompatActivity {
             tvName.setText(name);
 
             imgDuck.setImageResource(R.drawable.duck_run);
+            imgDuck.clearColorFilter();
             startDrawableIfAnim(imgDuck);
 
             // ẨN SÓNG BAN ĐẦU (chưa bấm Start)
@@ -976,7 +982,10 @@ public class MainActivity extends AppCompatActivity {
     // ======= Full Screen Methods =======
     private void hideSystemUI() {
         View decorView = getWindow().getDecorView();
-        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        int uiOptions = View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                 | View.SYSTEM_UI_FLAG_FULLSCREEN
                 | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
         decorView.setSystemUiVisibility(uiOptions);

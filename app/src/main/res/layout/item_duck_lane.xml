@@ -1,8 +1,10 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="80dp"
-    android:paddingStart="12dp"
+    android:layout_height="70dp"
+    android:layout_marginStart="30dp"
+    android:layout_marginEnd="250dp"
+    android:paddingStart="60dp"
     android:paddingEnd="12dp"
     android:gravity="center_vertical"
     android:baselineAligned="false">
@@ -25,8 +27,6 @@
         android:layout_weight="1"
         android:clipChildren="false"
         android:clipToPadding="false"
-        android:paddingTop="4dp"
-        android:paddingBottom="4dp"
         tools:background="#11B3E5FF">
 
         <!-- Nền đường đua cho lane này -->
@@ -41,7 +41,7 @@
         <!-- Vịt (nằm dưới) -->
         <ImageView
             android:id="@+id/imgDuck"
-            android:layout_width="83dp"
+            android:layout_width="75dp"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|start"
             android:adjustViewBounds="true"
@@ -52,8 +52,8 @@
         <!-- Sóng phủ lên -->
         <ImageView
             android:id="@+id/imgWave"
-            android:layout_width="89dp"
-            android:layout_height="38dp"
+            android:layout_width="80dp"
+            android:layout_height="34dp"
             android:layout_gravity="bottom"
             android:alpha="0.9"
             android:scaleType="fitXY"

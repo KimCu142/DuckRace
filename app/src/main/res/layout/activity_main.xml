@@ -9,7 +9,7 @@
 
     <!-- Floating Controls -->
     
-    <!-- Duck Count Selector (Top Left) -->
+    <!-- Duck Count Selector (Right Column) -->
     <LinearLayout
         android:id="@+id/duckCountSelector"
         android:layout_width="wrap_content"
@@ -18,9 +18,10 @@
         android:background="@drawable/coin_display_background"
         android:padding="8dp"
         android:elevation="6dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_margin="16dp">
+        app:layout_constraintTop_toBottomOf="@id/controlButtons"
+        app:layout_constraintEnd_toEndOf="@id/controlButtons"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp">
 
         <TextView
             android:layout_width="wrap_content"
@@ -83,19 +84,20 @@
 
     </LinearLayout>
 
-    <!-- Coin Display (Bottom Left) -->
+    <!-- Coin Display (Right Column) -->
     <LinearLayout
         android:id="@+id/coinDisplay"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@drawable/coin_display_background"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:padding="8dp"
         android:elevation="6dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:layout_margin="16dp">
+        app:layout_constraintTop_toBottomOf="@id/duckCountSelector"
+        app:layout_constraintStart_toStartOf="@id/duckCountSelector"
+        app:layout_constraintEnd_toEndOf="@id/duckCountSelector"
+        android:layout_marginTop="12dp">
 
         <ImageView
             android:layout_width="20dp"
@@ -149,14 +151,15 @@
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:fillViewport="true"
+            android:layout_gravity="center_horizontal|center_vertical"
+            android:translationY="44dp">
 
             <LinearLayout
                 android:id="@+id/lanesContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingBottom="16dp"/>
+                android:orientation="vertical"/>
         </ScrollView>
 
         <!-- Vạch đích (đỏ, toàn chiều cao) -->
