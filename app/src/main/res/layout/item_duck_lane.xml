@@ -25,7 +25,18 @@
         android:layout_weight="1"
         android:clipChildren="false"
         android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
         tools:background="#11B3E5FF">
+
+        <!-- Nền đường đua cho lane này -->
+        <ImageView
+            android:id="@+id/swimLaneBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/swim_lane"
+            android:scaleType="fitXY"
+            android:alpha="0.9"/>
 
         <!-- Vịt (nằm dưới) -->
         <ImageView
@@ -35,7 +46,7 @@
             android:layout_gravity="bottom|start"
             android:adjustViewBounds="true"
             android:contentDescription="@string/app_name"
-            android:translationZ="0dp"
+            android:translationZ="1dp"
             tools:src="@drawable/duck_run" />
 
         <!-- Sóng phủ lên -->

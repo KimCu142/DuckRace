@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.WindowManager;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -93,6 +94,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Thiết lập full screen
+        hideSystemUI();
+
         setContentView(R.layout.activity_main);
 
         spDuckCount = findViewById(R.id.spDuckCount);
@@ -967,4 +972,24 @@ public class MainActivity extends AppCompatActivity {
         tvCoins.startAnimation(bounceAnim);
     }
 
+
+    // ======= Full Screen Methods =======
+    private void hideSystemUI() {
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        decorView.setSystemUiVisibility(uiOptions);
+
+        // Giữ màn hình luôn sáng
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI();
+        }
+    }
 }
