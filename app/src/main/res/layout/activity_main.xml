@@ -7,105 +7,123 @@
     android:layout_height="match_parent"
     android:background="#FAFAFA">
 
-    <!-- Thanh điều khiển -->
+    <!-- Floating Controls -->
+    
+    <!-- Duck Count Selector (Top Left) -->
     <LinearLayout
-        android:id="@+id/controls"
-        android:layout_width="0dp"
+        android:id="@+id/duckCountSelector"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:background="@drawable/coin_display_background"
+        android:padding="8dp"
+        android:elevation="6dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:layout_margin="16dp">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Số vịt:"
             android:textStyle="bold"
+            android:textSize="12sp"
             android:layout_gravity="center_vertical"
-            android:paddingEnd="8dp"/>
+            android:paddingEnd="4dp"/>
 
         <Spinner
             android:id="@+id/spDuckCount"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:minWidth="60dp"/>
 
-        <!-- đẩy phần còn lại sang phải -->
-        <Space
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1"/>
+    </LinearLayout>
 
-        <!-- Start / Reset -->
+    <!-- Control Buttons (Top Right) -->
+    <LinearLayout
+        android:id="@+id/controlButtons"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:elevation="6dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp">
+
         <Button
             android:id="@+id/btnStart"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Try"/>
+            android:text="Try"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/coin_display_background"
+            android:textSize="12sp"
+            android:minWidth="60dp"/>
 
         <Button
             android:id="@+id/btnReset"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Reset"
-            android:layout_marginStart="8dp"
-            />
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/coin_display_background"
+            android:textSize="12sp"
+            android:minWidth="60dp"/>
+
         <Button
             android:id="@+id/btnPlayerName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Player"
-            android:layout_marginStart="8dp"
+            android:background="@drawable/coin_display_background"
+            android:textSize="12sp"
+            android:minWidth="60dp"
             android:ellipsize="end"
             android:singleLine="true"/>
 
-        <View
-            android:layout_width="8dp"
-            android:layout_height="0dp" />
+    </LinearLayout>
 
-        <!-- Coin Display Container -->
-        <LinearLayout
+    <!-- Coin Display (Bottom Left) -->
+    <LinearLayout
+        android:id="@+id/coinDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/coin_display_background"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp"
+        android:elevation="6dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_margin="16dp">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_coin"
+            android:layout_marginEnd="6dp"
+            android:contentDescription="Coin icon" />
+
+        <TextView
+            android:id="@+id/tvCoins"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/coin_display_background"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginStart="12dp"
-            android:layout_gravity="center_vertical"
-            android:elevation="4dp">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_coin"
-                android:layout_marginEnd="6dp"
-                android:contentDescription="Coin icon" />
-
-            <TextView
-                android:id="@+id/tvCoins"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0"
-                android:textStyle="bold"
-                android:textColor="#B8860B"
-                android:textSize="16sp"
-                android:minWidth="40dp"
-                android:gravity="center" />
-
-        </LinearLayout>
+            android:text="0"
+            android:textStyle="bold"
+            android:textColor="#B8860B"
+            android:textSize="16sp"
+            android:minWidth="40dp"
+            android:gravity="center" />
 
         <ImageButton
             android:id="@+id/btnAddCoin"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:src="@drawable/ic_add_coin"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Add coin"
             android:layout_marginStart="8dp"
-            android:layout_gravity="center_vertical"
-            android:elevation="2dp" />
-
+            android:layout_gravity="center_vertical" />
 
     </LinearLayout>
 
@@ -114,10 +132,19 @@
         android:id="@+id/trackFrame"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toBottomOf="@id/controls"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Nền sân (yard) chứa các lane -->
+        <ImageView
+            android:id="@+id/yardBackground"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/yard"
+            android:scaleType="centerCrop"
+            android:alpha="0.7"/>
 
         <ScrollView
             android:layout_width="match_parent"
@@ -153,10 +180,10 @@
         android:textColor="#222"
         android:gravity="center"
         android:padding="12dp"
-        app:layout_constraintTop_toTopOf="@id/trackFrame"
-        app:layout_constraintBottom_toBottomOf="@id/trackFrame"
-        app:layout_constraintStart_toStartOf="@id/trackFrame"
-        app:layout_constraintEnd_toEndOf="@id/trackFrame"/>
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
 
     <Button
         android:id="@+id/btnBet"

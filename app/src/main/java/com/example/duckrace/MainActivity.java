@@ -14,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.WindowManager;
 import android.media.MediaPlayer;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -64,7 +65,6 @@ public class MainActivity extends AppCompatActivity {
     private float FRICTION = 140f;
     private float RANDOM_JITTER_ACCEL = 180f; // gia tốc ngẫu nhiên mỗi tick để tạo kịch tính
 
-
     private float finishX = 0f;
 
     private final Random random = new Random();
@@ -94,6 +94,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Thiết lập full screen
+        hideSystemUI();
+
         setContentView(R.layout.activity_main);
 
         spDuckCount = findViewById(R.id.spDuckCount);
@@ -222,29 +226,39 @@ public class MainActivity extends AppCompatActivity {
         Drawable d = iv.getDrawable();
         if (d instanceof AnimationDrawable) {
             AnimationDrawable a = (AnimationDrawable) d;
-            if (play) a.start(); else a.stop();
+            if (play)
+                a.start();
+            else
+                a.stop();
         } else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable) {
             AnimatedImageDrawable a = (AnimatedImageDrawable) d;
-            if (play) a.start(); else a.stop();
+            if (play)
+                a.start();
+            else
+                a.stop();
         }
     }
 
     // Helper: start/stop cho drawable HIỆN CÓ của ImageView (không đổi resource)
     private void startDrawableIfAnim(ImageView iv) {
-        if (iv == null) return;
+        if (iv == null)
+            return;
         Drawable d = iv.getDrawable();
-        if (d instanceof AnimationDrawable) ((AnimationDrawable) d).start();
+        if (d instanceof AnimationDrawable)
+            ((AnimationDrawable) d).start();
         else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable)
             ((AnimatedImageDrawable) d).start();
     }
+
     private void stopDrawableIfAnim(ImageView iv) {
-        if (iv == null) return;
+        if (iv == null)
+            return;
         Drawable d = iv.getDrawable();
-        if (d instanceof AnimationDrawable) ((AnimationDrawable) d).stop();
+        if (d instanceof AnimationDrawable)
+            ((AnimationDrawable) d).stop();
         else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable)
             ((AnimatedImageDrawable) d).stop();
     }
-
 
     private void buildLanes(int count) {
         // Nếu đang chạy thì dừng
@@ -270,7 +284,8 @@ public class MainActivity extends AppCompatActivity {
             // ẨN SÓNG BAN ĐẦU (chưa bấm Start)
             if (imgWave != null) {
                 Drawable wd = imgWave.getDrawable();
-                if (wd instanceof AnimationDrawable) ((AnimationDrawable) wd).stop();
+                if (wd instanceof AnimationDrawable)
+                    ((AnimationDrawable) wd).stop();
                 else if (Build.VERSION.SDK_INT >= 28 && wd instanceof AnimatedImageDrawable)
                     ((AnimatedImageDrawable) wd).stop();
                 imgWave.setVisibility(View.GONE);
@@ -302,35 +317,34 @@ public class MainActivity extends AppCompatActivity {
         finishX = Math.max(0, areaWidth - duckWidth - rightPadding);
     }
 
-     private void startCountdownThenRace() {
-    enableControls(false);
+    private void startCountdownThenRace() {
+        enableControls(false);
 
-    // Hiện "3" ngay lập tức cho chắc
-    tvCountdown.setText("3");
+        // Hiện "3" ngay lập tức cho chắc
+        tvCountdown.setText("3");
 
-    playSound(raceStartSound);
+        playSound(raceStartSound);
 
-    // 3 giây, tick mỗi 1 giây -> lần lượt 3, 2, 1
-    new CountDownTimer(3000, 1000) {
-        int n = 3;
+        // 3 giây, tick mỗi 1 giây -> lần lượt 3, 2, 1
+        new CountDownTimer(3000, 1000) {
+            int n = 3;
 
-        @Override
-        public void onTick(long millisUntilFinished) {
-            tvCountdown.setText(String.valueOf(n));
-            n--;
-        }
+            @Override
+            public void onTick(long millisUntilFinished) {
+                tvCountdown.setText(String.valueOf(n));
+                n--;
+            }
 
-        @Override
-        public void onFinish() {
-            tvCountdown.setText("FIGHT");
-            playGoSound();
-            // Xoá chữ sau 0.5s, race bắt đầu ngay
-            tvCountdown.postDelayed(() -> tvCountdown.setText(""), 500);
-            startRace();
-        }
-    }.start();
-}
-
+            @Override
+            public void onFinish() {
+                tvCountdown.setText("FIGHT");
+                playGoSound();
+                // Xoá chữ sau 0.5s, race bắt đầu ngay
+                tvCountdown.postDelayed(() -> tvCountdown.setText(""), 500);
+                startRace();
+            }
+        }.start();
+    }
 
     private void startRace() {
         // Đảm bảo tính được finishX
@@ -349,7 +363,8 @@ public class MainActivity extends AppCompatActivity {
             if (r.wave != null) {
                 r.wave.setVisibility(View.VISIBLE);
                 Drawable wd = r.wave.getDrawable();
-                if (wd instanceof AnimationDrawable) ((AnimationDrawable) wd).start();
+                if (wd instanceof AnimationDrawable)
+                    ((AnimationDrawable) wd).start();
                 else if (Build.VERSION.SDK_INT >= 28 && wd instanceof AnimatedImageDrawable)
                     ((AnimatedImageDrawable) wd).start();
             }
@@ -365,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
         stopRaceLoop();
         stopBackgroundMusic();
         stopGoSound();
-         stopRaceStartSound();
+        stopRaceStartSound();
         stopContinuousQuacking();
 
         for (DuckRunner r : runners) {
@@ -376,7 +391,8 @@ public class MainActivity extends AppCompatActivity {
             // TẮT SÓNG LẠI KHI RESET
             if (r.wave != null) {
                 Drawable wd = r.wave.getDrawable();
-                if (wd instanceof AnimationDrawable) ((AnimationDrawable) wd).stop();
+                if (wd instanceof AnimationDrawable)
+                    ((AnimationDrawable) wd).stop();
                 else if (Build.VERSION.SDK_INT >= 28 && wd instanceof AnimatedImageDrawable)
                     ((AnimatedImageDrawable) wd).stop();
                 r.wave.setVisibility(View.GONE);
@@ -402,8 +418,8 @@ public class MainActivity extends AppCompatActivity {
     private void stopRaceLoop() {
         raceRunning = false;
         handler.removeCallbacks(gameLoop);
-       for (DuckRunner r : runners) {
-            if (r.boostRunnable != null) {         
+        for (DuckRunner r : runners) {
+            if (r.boostRunnable != null) {
                 handler.removeCallbacks(r.boostRunnable);
                 r.boostRunnable = null;
             }
@@ -411,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // ======= Game loop (60fps) =======
-     private long lastTickMs = 0L;
+    private long lastTickMs = 0L;
     private final Runnable gameLoop = new Runnable() {
         @Override
         public void run() {
@@ -448,7 +464,8 @@ public class MainActivity extends AppCompatActivity {
 
                 // CHO SÓNG ĐI THEO NGANG VỚI VỊT
                 if (r.wave != null) {
-                    // nếu wave rộng ~ bằng con vịt, để offset = 0; cần chỉnh nhẹ thì đổi thành -dp(2) hoặc +dp(2)
+                    // nếu wave rộng ~ bằng con vịt, để offset = 0; cần chỉnh nhẹ thì đổi thành
+                    // -dp(2) hoặc +dp(2)
                     float waveOffsetX = 0f;
                     r.wave.setTranslationX(r.x + waveOffsetX);
                 }
@@ -603,7 +620,8 @@ public class MainActivity extends AppCompatActivity {
     private void playSound(MediaPlayer mediaPlayer) {
         if (mediaPlayer != null) {
             try {
-                if (mediaPlayer.isPlaying()) return;
+                if (mediaPlayer.isPlaying())
+                    return;
                 mediaPlayer.seekTo(200);
                 mediaPlayer.start();
             } catch (Exception e) {
@@ -632,8 +650,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-     private void playDuckQuack() {
-        if (duckQuackSounds == null) return;
+    private void playDuckQuack() {
+        if (duckQuackSounds == null)
+            return;
         // Chỉ phát khi có player rảnh, tránh chồng âm
         for (int i = 0; i < duckQuackSounds.length; i++) {
             int idx = random.nextInt(duckQuackSounds.length);
@@ -659,7 +678,7 @@ public class MainActivity extends AppCompatActivity {
     private void playGoSound() {
         if (goSound != null) {
             try {
-                goSound.seekTo(2000); 
+                goSound.seekTo(2000);
                 goSound.start();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -671,7 +690,7 @@ public class MainActivity extends AppCompatActivity {
         if (goSound != null && goSound.isPlaying()) {
             try {
                 goSound.pause();
-                
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -778,7 +797,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         void startAnimation() {
-            Drawable d = duck.getDrawable();     
+            Drawable d = duck.getDrawable();
             if (d instanceof AnimationDrawable) {
                 ((AnimationDrawable) d).start();
             } else if (Build.VERSION.SDK_INT >= 28 && d instanceof AnimatedImageDrawable) {
@@ -786,7 +805,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-         void stopAnimation() {
+        void stopAnimation() {
             Drawable d = duck.getDrawable();
             if (d instanceof AnimationDrawable) {
                 ((AnimationDrawable) d).stop();
@@ -954,5 +973,24 @@ public class MainActivity extends AppCompatActivity {
         tvCoins.startAnimation(bounceAnim);
     }
 
-}
+    // ======= Full Screen Methods =======
+    private void hideSystemUI() {
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+        decorView.setSystemUiVisibility(uiOptions);
 
+        // Giữ màn hình luôn sáng
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI();
+        }
+    }
+
+}
