@@ -3,6 +3,8 @@ package com.example.duckrace;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -20,44 +22,82 @@ public class RegisterActivity extends AppCompatActivity {
     private Button btnRegister;
     private TextView tvGoLogin;
 
-    @Override protected void onCreate(Bundle savedInstanceState) {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Enable full screen mode - edge to edge
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                        View.SYSTEM_UI_FLAG_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+
+        // Make status bar transparent
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+
         setContentView(R.layout.activity_register);
 
         auth = FirebaseAuth.getInstance();
-        db   = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
 
+        if (auth.getCurrentUser() != null) {
+            goMain();
+            return;
+        }
 
-        if (auth.getCurrentUser() != null) { goMain(); return; }
-
-        etEmail       = findViewById(R.id.etEmail);
-        etPassword    = findViewById(R.id.etPassword);
+        etEmail = findViewById(R.id.etEmail);
+        etPassword = findViewById(R.id.etPassword);
         etDisplayName = findViewById(R.id.etDisplayName);
-        btnRegister   = findViewById(R.id.btnRegister);
-        tvGoLogin     = findViewById(R.id.tvGoLogin);
+        btnRegister = findViewById(R.id.btnRegister);
+        tvGoLogin = findViewById(R.id.tvGoLogin);
 
         btnRegister.setOnClickListener(v -> doRegister());
-        tvGoLogin.setOnClickListener(v ->
-                startActivity(new Intent(this, LoginActivity.class)));
+        tvGoLogin.setOnClickListener(v -> startActivity(new Intent(this, LoginActivity.class)));
+
+        // Hide system UI when user interacts with the screen
+        getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
+            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                // System bars are visible, hide them again
+                getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            }
+        });
     }
 
     private void doRegister() {
         String email = etEmail.getText().toString().trim();
-        String pass  = etPassword.getText().toString().trim();
-        String name  = etDisplayName.getText().toString().trim();
+        String pass = etPassword.getText().toString().trim();
+        String name = etDisplayName.getText().toString().trim();
 
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(pass)) {
-            toast("Nhập email & mật khẩu"); return;
+            toast("Nhập email & mật khẩu");
+            return;
         }
         if (pass.length() < 6) {
-            toast("Mật khẩu tối thiểu 6 ký tự"); return;
+            toast("Mật khẩu tối thiểu 6 ký tự");
+            return;
         }
-        if (TextUtils.isEmpty(name)) name = "Người chơi mới";
+        if (TextUtils.isEmpty(name))
+            name = "Người chơi mới";
         final String displayName = TextUtils.isEmpty(name) ? "Người chơi mới" : name;
         auth.createUserWithEmailAndPassword(email, pass)
                 .addOnSuccessListener(r -> {
                     FirebaseUser user = r.getUser();
-                    if (user == null) { toast("Không lấy được user"); return; }
+                    if (user == null) {
+                        toast("Không lấy được user");
+                        return;
+                    }
                     // Tạo hồ sơ ban đầu trong Firestore
                     Map<String, Object> profile = new HashMap<>();
                     profile.put("email", email);

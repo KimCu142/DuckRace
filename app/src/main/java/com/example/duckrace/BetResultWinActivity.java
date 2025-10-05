@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -35,6 +36,22 @@ public class BetResultWinActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Enable full screen mode - edge to edge
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                        View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                        View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                        View.SYSTEM_UI_FLAG_FULLSCREEN |
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+
+        // Make status bar transparent
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
+
         setContentView(R.layout.activity_bet_result_win);
 
         // Get data from intent
@@ -57,6 +74,20 @@ public class BetResultWinActivity extends AppCompatActivity {
 
         // Play win sound
         playWinSound();
+
+        // Hide system UI when user interacts with the screen
+        getWindow().getDecorView().setOnSystemUiVisibilityChangeListener(visibility -> {
+            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
+                // System bars are visible, hide them again
+                getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
+                                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION |
+                                View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
+                                View.SYSTEM_UI_FLAG_FULLSCREEN |
+                                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            }
+        });
 
     }
 
@@ -125,7 +156,10 @@ public class BetResultWinActivity extends AppCompatActivity {
         boolean hasAnyBet = false;
         if (userBets != null) {
             for (Bet b : userBets) {
-                if (b != null && b.amount > 0) { hasAnyBet = true; break; }
+                if (b != null && b.amount > 0) {
+                    hasAnyBet = true;
+                    break;
+                }
             }
         }
 
@@ -136,7 +170,8 @@ public class BetResultWinActivity extends AppCompatActivity {
                 tvNoBetMessage.setText("You didn't place any bet.");
             }
         } else {
-            if (tvNoBetMessage != null) tvNoBetMessage.setVisibility(View.GONE);
+            if (tvNoBetMessage != null)
+                tvNoBetMessage.setVisibility(View.GONE);
             duckRankingContainer.setVisibility(View.VISIBLE);
             // Create duck ranking rows: 1-3 on left, remaining on right
             for (int i = 0; i < duckResults.size(); i++) {

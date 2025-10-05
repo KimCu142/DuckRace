@@ -1,10 +1,12 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-    android:padding="20dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:gravity="center"
-    android:background="@drawable/background">
+    android:background="@drawable/background"
+    android:fitsSystemWindows="false"
+    android:clipToPadding="false"
+    android:clipChildren="false">
 
     <TextView
         android:text="Đăng ký"
